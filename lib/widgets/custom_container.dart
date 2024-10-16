@@ -2,8 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class CustomContainer extends StatelessWidget {
+  final String creatorName;
+  final String updatedTime;
+  final String bulletinContent;
+  final String bulletinType;
+
   const CustomContainer({
     super.key,
+    required this.creatorName,
+    required this.updatedTime,
+    required this.bulletinContent,
+    required this.bulletinType,
   });
 
   @override
@@ -25,12 +34,7 @@ class CustomContainer extends StatelessWidget {
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: 20,
-          ),
+          padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -38,14 +42,14 @@ class CustomContainer extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Sarath Kumar',
+                    creatorName,
                     style: GoogleFonts.inter(
                       fontSize: 15.0,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   Text(
-                    '1:02 pm',
+                    updatedTime,
                     style: GoogleFonts.inter(
                       fontSize: 13.0,
                       fontWeight: FontWeight.w400,
@@ -55,12 +59,15 @@ class CustomContainer extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 10),
-              Text(
-                'I have reached the madurai district court and the client havent arrived yet. waiting outside the hall',
-                style: GoogleFonts.inter(
-                  fontSize: 15.0,
-                  fontWeight: FontWeight.w400,
-                  fontStyle: FontStyle.italic,
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  bulletinContent,
+                  style: GoogleFonts.inter(
+                    fontSize: 15.0,
+                    fontWeight: FontWeight.w400,
+                    fontStyle: FontStyle.italic,
+                  ),
                 ),
               ),
             ],

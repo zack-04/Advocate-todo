@@ -1,78 +1,103 @@
+import 'package:advocate_todo_list/const.dart';
+import 'package:advocate_todo_list/dialogs/search_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class TextNoteDialog extends StatefulWidget {
-  const TextNoteDialog({super.key});
+  final Function refreshCallback;
+
+  const TextNoteDialog({super.key, required this.refreshCallback});
 
   @override
   State<TextNoteDialog> createState() => _TextNoteDialogState();
 }
 
 class _TextNoteDialogState extends State<TextNoteDialog> {
-  final TextEditingController _searchController = TextEditingController();
-  final FocusNode _focusNode = FocusNode();
-  final FocusNode focusNode = FocusNode();
-  final List<String> allUsers = [
-    'Sarath Kumar',
-    'Abinaya',
-    'John',
-    'Suresh',
-    'Mahesh',
-    'Krishna',
-    'Swetha',
-    'Sam',
-    'Ram',
-    'Shyam',
-    'Saransh',
-    'Sikandar',
-  ];
-  List<String> filteredUsers = [];
-  List<String> selectedUsers = [];
   final TextEditingController controller = TextEditingController();
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+
+  String? loginUserId;
+  List<Map<String, String>> selectedUsers = [];
 
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(_filterUsers);
+    _getLoginUserId();
   }
 
-  @override
-  void dispose() {
-    _searchController.removeListener(_filterUsers);
-    _searchController.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  void _filterUsers() {
+  Future<void> _getLoginUserId() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      String searchTerm = _searchController.text.toLowerCase();
-      if (searchTerm.isEmpty) {
-        filteredUsers.clear();
+      loginUserId = prefs.getString('login_user_id');
+    });
+  }
+
+  Future<void> _createBulletin() async {
+    if (loginUserId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User not logged in!')),
+      );
+      return;
+    }
+
+    final String content = controller.text;
+    if (content.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter note content')),
+      );
+      return;
+    }
+
+    if (selectedUsers.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select at least one user to tag')),
+      );
+      return;
+    }
+
+    const String url = ApiConstants.bulletinCreate;
+    final List<String> tagUsers =
+    selectedUsers.map((user) => user['user_id']!).toList();
+    final Map<String, String> body = {
+      'enc_key': encKey,
+      'emp_id': loginUserId!,
+      'type': 'Text',
+      'tag_users': jsonEncode(tagUsers),
+      'content': content,
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == 'Success') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(data['remarks'])),
+          );
+          Navigator.pop(context);
+          widget.refreshCallback();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to create bulletin')),
+          );
+        }
       } else {
-        filteredUsers = allUsers
-            .where((user) => user.toLowerCase().contains(searchTerm))
-            .toList();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${response.statusCode}')),
+        );
       }
-    });
-  }
-
-  void _addUser(String user) {
-    setState(() {
-      if (!selectedUsers.contains(user)) {
-        selectedUsers.add(user);
-      }
-      _searchController.clear();
-      filteredUsers.clear();
-    });
-    _focusNode.requestFocus();
-  }
-
-  void _removeUser(String user) {
-    setState(() {
-      selectedUsers.remove(user);
-    });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
   }
 
   @override
@@ -84,7 +109,7 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
       ),
       child: SizedBox(
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20),
+          padding: const EdgeInsets.symmetric(vertical: 15),
           child: Form(
             key: formKey,
             child: Column(
@@ -125,7 +150,6 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
                     ),
                     child: TextFormField(
                       controller: controller,
-                      focusNode: focusNode,
                       cursorColor: Colors.black,
                       autovalidateMode: AutovalidateMode.onUserInteraction,
                       maxLines: null,
@@ -171,83 +195,31 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
                   padding: EdgeInsets.only(left: 25),
                   child: Text(
                     'Tag Users',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w500),
                   ),
                 ),
                 const SizedBox(height: 10),
 
-                // Search Field with Chips
-                Padding(
-                  padding: const EdgeInsets.only(left: 25, right: 25),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Wrap(
-                      spacing: 8.0,
-                      runSpacing: 4.0,
-                      alignment: WrapAlignment.start,
-                      children: [
-                        for (String user in selectedUsers)
-                          Chip(
-                            backgroundColor: Colors.grey.shade300,
-                            label: Text(user),
-                            onDeleted: () => _removeUser(user),
-                          ),
-                        TextField(
-                          controller: _searchController,
-                          focusNode: _focusNode,
-                          decoration: InputDecoration(
-                            border: InputBorder.none,
-                            hintText:
-                                selectedUsers.isEmpty ? 'Search Users' : '',
-                          ),
-                          onEditingComplete: () {
-                            if (filteredUsers.isNotEmpty) {
-                              _addUser(filteredUsers.first);
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
+                UserSearch(
+                  selectedUsers: selectedUsers,
+                  onUserSelected: (user) {
+                    setState(() {
+                      selectedUsers.add(user);
+                    });
+                  },
+                  onUserRemoved: (user) {
+                    setState(() {
+                      selectedUsers.removeWhere(
+                              (selected) => selected['user_id'] == user['user_id']);
+                    });
+                  },
                 ),
 
-                if (filteredUsers.isNotEmpty)
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: filteredUsers.length,
-                        itemBuilder: (context, index) {
-                          final user = filteredUsers[index];
-                          return GestureDetector(
-                            onTap: () => _addUser(user),
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 20, top: 10),
-                              child: Text(
-                                user,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 15),
                 Padding(
                   padding: const EdgeInsets.only(
                     left: 20,
-                    right: 10,
+                    right: 25,
                   ),
                   child: Align(
                     alignment: Alignment.centerRight,
@@ -258,8 +230,8 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
                         borderRadius: BorderRadius.circular(5),
                       ),
                       color: const Color(0xFF4B4B4B),
-                      onPressed: () {
-                        Navigator.pop(context);
+                      onPressed: () async {
+                        await _createBulletin();
                       },
                       child: Text(
                         'Send',
@@ -280,11 +252,11 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
   }
 }
 
-void showTextNoteDialog(BuildContext context) {
+void showTextNoteDialog(BuildContext context, Function refreshCallback) {
   showDialog(
     context: context,
     builder: (BuildContext context) {
-      return const TextNoteDialog();
+      return TextNoteDialog(refreshCallback: refreshCallback);
     },
   );
 }
