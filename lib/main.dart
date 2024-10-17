@@ -2,19 +2,25 @@ import 'package:advocate_todo_list/methods/methods.dart';
 import 'package:advocate_todo_list/pages/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:advocate_todo_list/dialogs/info_dialog.dart';
 import 'package:advocate_todo_list/pages/login_page.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
+FlutterLocalNotificationsPlugin();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Permission.notification.request();
+  await Permission.notification.request(); // Request notification permission
+
+  // Request audio recording permission
+  await Permission.microphone.request();
+
   await requestExactAlarmsPermission();
 
 
@@ -24,9 +30,9 @@ void main() async {
 
   // Android initialization settings for notifications
   const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
+  AndroidInitializationSettings('@mipmap/ic_launcher');
   final NotificationAppLaunchDetails? notificationAppLaunchDetails =
-      await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
+  await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
 
   String? payload;
   if (notificationAppLaunchDetails?.didNotificationLaunchApp ?? false) {
@@ -83,8 +89,8 @@ void backgroundNotificationHandler(NotificationResponse response) {
 // Function to request exact alarm permission on Android 13+
 Future<void> requestExactAlarmsPermission() async {
   final AndroidFlutterLocalNotificationsPlugin? androidPlugin =
-      flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+  flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+      AndroidFlutterLocalNotificationsPlugin>();
 
   if (androidPlugin != null) {
     await androidPlugin.requestExactAlarmsPermission();
