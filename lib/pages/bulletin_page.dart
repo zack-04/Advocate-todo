@@ -3,12 +3,13 @@ import 'package:advocate_todo_list/const.dart';
 import 'package:advocate_todo_list/dialogs/text_note_dialog.dart';
 import 'package:advocate_todo_list/dialogs/voice_note_dialog.dart';
 import 'package:advocate_todo_list/widgets/custom_container.dart';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_sound/flutter_sound.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../dialogs/search_dialog.dart';
 
 class BulletinPage extends StatefulWidget {
   const BulletinPage({super.key});
@@ -18,31 +19,34 @@ class BulletinPage extends StatefulWidget {
 }
 
 class _BulletinPageState extends State<BulletinPage> {
+
+
   List bulletinData = [];
   bool isLoading = true;
   String? loginUserId;
+  FlutterSoundPlayer? _audioPlayer;
+  String? playingVoiceNote;
 
   @override
   void initState() {
     super.initState();
     _getLoginUserIdAndFetchData();
+    _audioPlayer = FlutterSoundPlayer();
+    _audioPlayer!.openPlayer();
   }
 
   Future<void> _getLoginUserIdAndFetchData() async {
-    // Retrieve loginUserId from SharedPreferences
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       loginUserId = prefs.getString('login_user_id');
     });
 
     if (loginUserId != null) {
-      // Fetch bulletin data using the retrieved loginUserId
       fetchBulletinData(loginUserId!);
     } else {
       setState(() {
         isLoading = false;
       });
-      // Handle case where loginUserId is null
     }
   }
 
@@ -52,13 +56,8 @@ class _BulletinPageState extends State<BulletinPage> {
     try {
       final response = await http.post(
         Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: {
-          'enc_key': encKey,
-          'emp_id': empId,
-        },
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: {'enc_key': encKey, 'emp_id': empId},
       );
 
       if (response.statusCode == 200) {
@@ -86,11 +85,37 @@ class _BulletinPageState extends State<BulletinPage> {
     }
   }
 
-  // Method to refresh data when the dialog sends a new note
+  Future<void> _togglePlayPause(String voiceNoteUrl) async {
+    if (playingVoiceNote == voiceNoteUrl) {
+      await _audioPlayer!.stopPlayer();
+      setState(() {
+        playingVoiceNote = null;
+      });
+    } else {
+      await _audioPlayer!.startPlayer(
+        fromURI: voiceNoteUrl,
+        whenFinished: () {
+          setState(() {
+            playingVoiceNote = null;
+          });
+        },
+      );
+      setState(() {
+        playingVoiceNote = voiceNoteUrl;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer?.closePlayer();
+    super.dispose();
+  }
+
   void _refreshBulletinData() {
     if (loginUserId != null) {
       setState(() {
-        isLoading = true; // Show loading again
+        isLoading = true;
       });
       fetchBulletinData(loginUserId!);
     }
@@ -102,11 +127,7 @@ class _BulletinPageState extends State<BulletinPage> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -124,9 +145,7 @@ class _BulletinPageState extends State<BulletinPage> {
                     onTap: () {
                       showDialogAtTopRight(context, _refreshBulletinData);
                     },
-                    child: SvgPicture.asset(
-                      'assets/icons/horn.svg',
-                    ),
+                    child: SvgPicture.asset('assets/icons/horn.svg'),
                   ),
                 ],
               ),
@@ -135,16 +154,39 @@ class _BulletinPageState extends State<BulletinPage> {
                   ? const Center(child: CircularProgressIndicator())
                   : Expanded(
                 child: ListView.builder(
-                  shrinkWrap: true,
                   itemCount: bulletinData.length,
                   physics: const BouncingScrollPhysics(),
                   itemBuilder: (context, index) {
                     final item = bulletinData[index];
+                    final isVoiceNote = item['type'] == 'Voice';
+                    final voiceNoteUrl = item['voice_note_file'];
+                    final fileName = voiceNoteUrl
+                        ?.split('/')
+                        ?.last ?? '';
+
                     return CustomContainer(
                       creatorName: item['creator_name'] ?? 'Unknown',
                       updatedTime: item['updated_time'] ?? 'N/A',
-                      bulletinContent: item['bulletin_content'] ?? '',
+                      bulletinContent: isVoiceNote
+                          ? fileName
+                          : item['bulletin_content'] ?? '',
                       bulletinType: item['type'] ?? 'Text',
+                      extraWidget: isVoiceNote && voiceNoteUrl != null
+                          ? IconButton(
+                        icon: Icon(
+                          playingVoiceNote == voiceNoteUrl
+                              ? Icons.pause
+                              : Icons.play_arrow,
+                          color: playingVoiceNote == voiceNoteUrl
+                              ? Colors.green
+                              : Colors.red,
+                          size: 30,
+                        ),
+                        onPressed: () {
+                          _togglePlayPause(voiceNoteUrl);
+                        },
+                      )
+                          : null,
                     );
                   },
                 ),

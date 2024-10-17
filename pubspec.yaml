@@ -48,7 +48,8 @@ dependencies:
   timezone: ^0.9.4
   permission_handler: ^11.3.1
   shared_preferences: ^2.3.2
-
+  device_info_plus: ^11.0.0
+  flutter_sound: ^9.16.3
 dev_dependencies:
   flutter_test:
     sdk: flutter

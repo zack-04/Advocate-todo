@@ -6,6 +6,7 @@ class CustomContainer extends StatelessWidget {
   final String updatedTime;
   final String bulletinContent;
   final String bulletinType;
+  final Widget? extraWidget;
 
   const CustomContainer({
     super.key,
@@ -13,6 +14,7 @@ class CustomContainer extends StatelessWidget {
     required this.updatedTime,
     required this.bulletinContent,
     required this.bulletinType,
+    this.extraWidget,
   });
 
   @override
@@ -20,7 +22,7 @@ class CustomContainer extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(top: 20, bottom: 10),
       child: Container(
-        margin: const EdgeInsets.only(right: 5, left: 5),
+        margin: const EdgeInsets.symmetric(horizontal: 5),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           color: Colors.white,
@@ -28,7 +30,6 @@ class CustomContainer extends StatelessWidget {
             BoxShadow(
               color: Colors.black.withOpacity(0.25),
               blurRadius: 10,
-              spreadRadius: 0,
               offset: const Offset(0, 0),
             ),
           ],
@@ -37,6 +38,7 @@ class CustomContainer extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -59,17 +61,18 @@ class CustomContainer extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  bulletinContent,
-                  style: GoogleFonts.inter(
-                    fontSize: 15.0,
-                    fontWeight: FontWeight.w400,
-                    fontStyle: FontStyle.italic,
-                  ),
+              Text(
+                bulletinContent,
+                style: GoogleFonts.inter(
+                  fontSize: 15.0,
+                  fontWeight: FontWeight.w400,
+                  fontStyle: FontStyle.italic,
                 ),
               ),
+              if (extraWidget != null) ...[
+                const SizedBox(height: 10),
+                extraWidget!,
+              ],
             ],
           ),
         ),
