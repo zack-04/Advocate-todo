@@ -249,15 +249,12 @@ class _LoginPageState extends State<LoginPage> {
                         padding: const EdgeInsets.only(bottom: 20),
                         child: CustomButton(
                           text: 'Login',
-                          onPressed: () async {
+                          onPressed: () {
                             FocusScope.of(context).unfocus();
                             if (!formKey.currentState!.validate()) {
                               return;
                             }
-                            await loginUser(
-                              mobController.text,
-                              passController.text,
-                            );
+                            loginUser(mobController.text, passController.text);
                           },
                         ),
                       ),

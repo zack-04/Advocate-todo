@@ -10,6 +10,10 @@ class ApiConstants {
   static const String todoCreationEndPoint = '${baseUrl}Todo/Todo-Creation';
   static const String todoDetailsEndPoint = '${baseUrl}Todo/Todo-Details';
   static const String tranferEndPoint = '${baseUrl}Todo/Todo-Transfer';
+  static const String causeList = '${baseUrl}Cause/Cause-List';
+  static const String bulletinList = '${baseUrl}bulletin/Bulletin-List';
+  static const String bulletinCreate = '${baseUrl}bulletin/Bulletin-Creation';
+  static const String allUsers = '${baseUrl}User/Active-User-List';
 }
 
 Future<String?> getLoginUserId() async {

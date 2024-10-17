@@ -2,7 +2,11 @@ import 'package:advocate_todo_list/widgets/image_container.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../const.dart';
 class CaseListPage extends StatefulWidget {
   const CaseListPage({super.key});
 
@@ -12,6 +16,9 @@ class CaseListPage extends StatefulWidget {
 
 class _CaseListPageState extends State<CaseListPage> {
   DateTime selectedDate = DateTime.now();
+  List<Map<String, dynamic>> causeList = [];
+  bool isLoading = false;
+  String? loginUserId;
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? pickedDate = await showDatePicker(
@@ -25,8 +32,87 @@ class _CaseListPageState extends State<CaseListPage> {
       setState(() {
         selectedDate = pickedDate;
       });
+      _fetchCauseList(); // Fetch the data when a new date is selected
     }
   }
+
+  Future<void> _getLoginUserId() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      loginUserId = prefs.getString('login_user_id');
+    });
+  }
+
+  Future<void> _fetchCauseList() async {
+    if (loginUserId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('User not logged in!')),
+      );
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    const String url = ApiConstants.causeList;
+    final stopwatch = Stopwatch()..start(); // Start measuring time
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        body: {
+          'enc_key': encKey,
+          'emp_id': loginUserId!,
+          'cause_date': DateFormat('yyyy-MM-dd').format(selectedDate),
+        },
+      );
+
+      stopwatch.stop();
+      print('API call took ${stopwatch.elapsedMilliseconds} ms'); // Log time
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        setState(() {
+          causeList = List<Map<String, dynamic>>.from(data['data']);
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load cause list')),
+        );
+      }
+    } catch (e) {
+      stopwatch.stop();
+      print('Error: $e');
+      setState(() {
+        isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+  }
+
+
+  @override
+  void initState() {
+    super.initState();
+    _getLoginUserIdAndFetchData(); // Fetch login_user_id and cause list initially
+  }
+
+  Future<void> _getLoginUserIdAndFetchData() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    loginUserId = prefs.getString('login_user_id');
+
+    if (loginUserId != null) {
+      _fetchCauseList(); // Only fetch data after user ID is available
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -85,36 +171,27 @@ class _CaseListPageState extends State<CaseListPage> {
                 ),
               ),
               const SizedBox(height: 30),
-              const Expanded(
+              isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : Expanded(
                 child: SingleChildScrollView(
-                  physics: BouncingScrollPhysics(),
+                  physics: const BouncingScrollPhysics(),
                   child: Column(
                     children: [
-                      ImageContainer(
-                        path: 'assets/images/image1.png',
-                        fileName: "Word file",
-                        downloadUrl:
-                            'https://file-examples.com/wp-content/storage/2017/02/file-sample_100kB.doc',
-                      ),
-                      SizedBox(height: 20),
-                      ImageContainer(
-                        path: 'assets/images/image2.png',
-                        fileName: "Pdf file",
-                        downloadUrl:
-                            'https://onlinetestcase.com/wp-content/uploads/2023/06/1-MB.pdf',
-                      ),
-                      SizedBox(height: 20),
-                      ImageContainer(
-                        path: 'assets/images/image2.png',
-                        fileName: "Image file",
-                        downloadUrl:
-                            'https://cdn.prod.website-files.com/6410ebf8e483b5bb2c86eb27/6410ebf8e483b5758186fbd8_ABM%20college%20mobile%20app%20dev%20main.jpg',
-                      ),
-                      SizedBox(height: 130),
+                      for (var cause in causeList)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 20),
+                          child: ImageContainer(
+                            path: cause['cause_file'], // dynamic path
+                            fileName: cause['title'],
+                            downloadUrl: cause['cause_file'],
+                          ),
+                        ),
+                      const SizedBox(height: 130),
                     ],
                   ),
                 ),
-              )
+              ),
             ],
           ),
         ),
