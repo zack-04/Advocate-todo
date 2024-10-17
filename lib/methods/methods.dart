@@ -20,10 +20,12 @@ Future<void> createNotificationChannel() async {
       ?.createNotificationChannel(channel);
 }
 
-Future<void> showNotification(
-    {required String title,
-    required String body,
-    required tz.TZDateTime time}) async {
+Future<void> showNotification({
+  required String title,
+  required String body,
+  required tz.TZDateTime time,
+  required String todoId,
+}) async {
   AndroidNotificationDetails androidPlatformChannelSpecifics =
       const AndroidNotificationDetails(
     'task_reminder',
@@ -48,12 +50,12 @@ Future<void> showNotification(
     platformChannelSpecifics,
     uiLocalNotificationDateInterpretation:
         UILocalNotificationDateInterpretation.absoluteTime,
-    payload: 'Payload',
+    payload: todoId,
     androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
   );
 }
 
-Future<void> scheduleNotification(BuildContext context) async {
+Future<void> scheduleNotification(BuildContext context, String todoId) async {
   // Date picker
   final DateTime? pickedDate = await showDatePicker(
     context: context,
@@ -99,7 +101,7 @@ Future<void> scheduleNotification(BuildContext context) async {
           foregroundColor: Colors.black,
         );
       } else {
-        await _setNotification(tzScheduledDateTime, context);
+        await _setNotification(tzScheduledDateTime, context, todoId);
       }
     }
   }
@@ -108,6 +110,7 @@ Future<void> scheduleNotification(BuildContext context) async {
 Future<void> _setNotification(
   tz.TZDateTime scheduledDateTime,
   BuildContext context,
+  String todoId,
 ) async {
   debugPrint('Set');
   Navigator.pop(context);
@@ -126,6 +129,7 @@ Future<void> _setNotification(
     title: 'To Do Reminder',
     body: 'You have a to-do task scheduled.',
     time: scheduledDateTime,
+    todoId: todoId,
   );
   HapticFeedback.vibrate();
 }

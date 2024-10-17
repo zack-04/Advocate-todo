@@ -1,27 +1,64 @@
+import 'dart:convert';
+import 'package:advocate_todo_list/const.dart';
 import 'package:advocate_todo_list/dialogs/transfer_dialog.dart';
+import 'package:advocate_todo_list/methods/methods.dart';
+import 'package:advocate_todo_list/model/todo_details_model.dart';
+import 'package:advocate_todo_list/model/user_model.dart';
+import 'package:advocate_todo_list/widgets/toast_message.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'package:toastification/toastification.dart';
 
 class InfoDialog extends StatefulWidget {
-  const InfoDialog({super.key, this.onTap});
-  final void Function()? onTap;
+  const InfoDialog({
+    super.key,
+    required this.toDoDetailsResponse,
+    required this.onTransfer,
+  });
+  final ToDoDetailsResponse toDoDetailsResponse;
+  final VoidCallback onTransfer;
 
   @override
   State<InfoDialog> createState() => _InfoDialogState();
 }
 
 class _InfoDialogState extends State<InfoDialog> {
-  String? selectedPerson;
-  final List<String> persons = [
-    'Sarath Kumar',
-    'Suresh',
-    'Mahesh',
-    'Sudharshan',
-    'Maheshwari'
-  ];
+  Future<void> getActiveUsersList() async {
+    String? empId = await getLoginUserId();
+    debugPrint('empid: $empId');
+    const String url = ApiConstants.activeUserEndPoint;
+
+    final request = http.MultipartRequest('POST', Uri.parse(url))
+      ..fields['enc_key'] = 'iq8xkfInuzVYYnE4YIpapvQUg6uU'
+      ..fields['emp_id'] = empId!;
+
+    try {
+      final response = await request.send();
+      if (response.statusCode == 200) {
+        final responseBody = await response.stream.bytesToString();
+        final Map<String, dynamic> jsonMap = jsonDecode(responseBody);
+        debugPrint('responsebody: $responseBody');
+        if (mounted) {
+          Navigator.pop(context);
+          showTransferDialog(
+            context,
+            UserDataResponse.fromJson(jsonMap),
+            widget.toDoDetailsResponse.data.todoId!,
+            widget.onTransfer,
+          );
+        }
+      } else {
+        debugPrint('Failed: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Error id: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final data = widget.toDoDetailsResponse.data;
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
@@ -52,7 +89,10 @@ class _InfoDialogState extends State<InfoDialog> {
                   ),
                   const Spacer(),
                   GestureDetector(
-                    onTap: widget.onTap,
+                    onTap: () async {
+                      debugPrint('Todo id = ${data.todoId!}');
+                      await scheduleNotification(context, data.todoId!);
+                    },
                     child: const Icon(
                       Icons.alarm,
                       size: 20,
@@ -74,20 +114,25 @@ class _InfoDialogState extends State<InfoDialog> {
               ),
             ),
             const SizedBox(height: 20),
-            const Padding(
-              padding: EdgeInsets.only(left: 20),
+            Padding(
+              padding: const EdgeInsets.only(left: 20),
               child: Text(
-                'it over 2000 years old. Richard McClintock, a Latin professor at Hampden-Sydney College in Virginia, looked up one of the more obscure Latin words,',
-                style: TextStyle(fontSize: 14),
+                data.content!,
+                style: const TextStyle(fontSize: 14),
               ),
             ),
             const SizedBox(height: 20),
-            _rowWidget('Created By:', 'Sarath Kumar'),
+            _rowWidget('Created By:', data.creatorName!),
             _rowWidget('Created On:', '02 Oct 2024'),
             _rowWidget('Complete By:', '10 Oct 2024 (+2 days)'),
-            _rowWidget('Priority:', 'High'),
-            _rowWidget('Transfer To:', 'Vinoth Kumar (Pending)'),
-            _rowWidget('Handled By:', 'Sarath Kumar'),
+            _rowWidget('Priority:', data.priority!),
+            _rowWidget(
+              'Transfer To:',
+              data.transferPersonName == null
+                  ? ''
+                  : '${data.transferPersonName} (${data.todoStatus})',
+            ),
+            _rowWidget('Handled By:', data.handlingPersonName!),
             const SizedBox(height: 15),
             Padding(
               padding: const EdgeInsets.only(
@@ -104,9 +149,8 @@ class _InfoDialogState extends State<InfoDialog> {
                     borderRadius: BorderRadius.circular(5),
                   ),
                   color: const Color(0xFF4B4B4B),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    showTransferDialog(context);
+                  onPressed: () async {
+                    await getActiveUsersList();
                   },
                   child: Text(
                     'Transfer',
@@ -125,16 +169,81 @@ class _InfoDialogState extends State<InfoDialog> {
   }
 }
 
-void showInfoDialog(BuildContext context, void Function()? onTap) {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return InfoDialog(
-        onTap: onTap,
+Future<void> todoDetailsApi(
+  BuildContext context,
+  String todoId,
+  VoidCallback onTransfer,
+) async {
+  String? empId = await getLoginUserId();
+  debugPrint('Id = $empId');
+  debugPrint('api todo id = $todoId');
+  const String url = ApiConstants.todoDetailsEndPoint;
+
+  try {
+    final response = await http.post(
+      Uri.parse(url),
+      body: {
+        'enc_key': encKey,
+        'emp_id': empId,
+        'todo_id': todoId,
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseBody = jsonDecode(response.body);
+
+      if (responseBody['status'] == 'Success') {
+        final todoDetailsResponse = ToDoDetailsResponse.fromJson(responseBody);
+        print('Response body = $responseBody');
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return InfoDialog(
+              toDoDetailsResponse: todoDetailsResponse,
+              onTransfer: () => onTransfer,
+            );
+          },
+        );
+      }
+    } else {
+      showCustomToastification(
+        context: context,
+        type: ToastificationType.error,
+        title: 'Server error! Please try again.',
+        icon: Icons.error,
+        primaryColor: Colors.red,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
       );
-    },
-  );
+    }
+  } catch (e) {
+    showCustomToastification(
+      context: context,
+      type: ToastificationType.error,
+      title: 'An error occurred! Please check your connection.',
+      icon: Icons.error,
+      primaryColor: Colors.red,
+      backgroundColor: Colors.white,
+      foregroundColor: Colors.black,
+    );
+  }
 }
+
+// void showInfoDialog(
+//   BuildContext context,
+//   void Function()? onTap,
+//   ToDoDetailsResponse toDoDetailsResponse,
+// ) {
+//   showDialog(
+//     context: context,
+//     builder: (BuildContext context) {
+//       return InfoDialog(
+//         onTap: onTap,
+//         toDoDetailsResponse: toDoDetailsResponse,
+//       );
+//     },
+//   );
+// }
 
 Widget _rowWidget(String text1, String text2) {
   return Padding(

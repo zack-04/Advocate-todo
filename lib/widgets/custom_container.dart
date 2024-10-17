@@ -6,7 +6,9 @@ class CustomContainer extends StatelessWidget {
   final String updatedTime;
   final String bulletinContent;
   final String bulletinType;
+
   final Widget? extraWidget;
+
 
   const CustomContainer({
     super.key,
@@ -14,7 +16,9 @@ class CustomContainer extends StatelessWidget {
     required this.updatedTime,
     required this.bulletinContent,
     required this.bulletinType,
+
     this.extraWidget,
+
   });
 
   @override
@@ -61,12 +65,17 @@ class CustomContainer extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 10),
-              Text(
-                bulletinContent,
-                style: GoogleFonts.inter(
-                  fontSize: 15.0,
-                  fontWeight: FontWeight.w400,
-                  fontStyle: FontStyle.italic,
+
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  bulletinContent,
+                  style: GoogleFonts.inter(
+                    fontSize: 15.0,
+                    fontWeight: FontWeight.w400,
+                    fontStyle: FontStyle.italic,
+                  ),
+
                 ),
               ),
               if (extraWidget != null) ...[

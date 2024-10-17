@@ -27,11 +27,93 @@ class _LoginPageState extends State<LoginPage> {
   final bool _obscureText = true;
   bool isLoading = false;
 
-  // void _togglePasswordVisibility() {
-  //   setState(() {
-  //     _obscureText = !_obscureText;
-  //   });
-  // }
+  Future<void> _saveLoginUserId(String loginUserId) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('login_user_id', loginUserId);
+  }
+
+  Future<void> loginUser(String mobile, String password) async {
+    const String url = ApiConstants.loginEndpoint;
+
+    try {
+      setState(() {
+        isLoading = true;
+      });
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {
+          'enc_key': encKey,
+          'mobile': mobile,
+          'password': password,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseBody = jsonDecode(response.body);
+
+        if (responseBody['status'] == 'Success') {
+          final String loginUserId = responseBody['login_user_id'];
+          await _saveLoginUserId(loginUserId);
+
+          showCustomToastification(
+            context: context,
+            type: ToastificationType.success,
+            title: 'Logged in successfully!',
+            icon: Icons.check,
+            primaryColor: Colors.green,
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+          );
+
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const HomePage(),
+            ),
+            (route) => false,
+          );
+        } else {
+          showCustomToastification(
+            context: context,
+            type: ToastificationType.error,
+            title: 'Login failed!',
+            icon: Icons.error,
+            primaryColor: Colors.red,
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+          );
+        }
+      } else {
+        showCustomToastification(
+          context: context,
+          type: ToastificationType.error,
+          title: 'Server error! Please try again.',
+          icon: Icons.error,
+          primaryColor: Colors.red,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+        );
+      }
+    } catch (e) {
+      showCustomToastification(
+        context: context,
+        type: ToastificationType.error,
+        title: 'An error occurred! Please check your connection.',
+        icon: Icons.error,
+        primaryColor: Colors.red,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+      );
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
 
   Future<void> _saveLoginUserId(String loginUserId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
