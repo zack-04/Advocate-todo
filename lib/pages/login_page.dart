@@ -5,6 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:toastification/toastification.dart';
 import 'package:flutter/services.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../const.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -22,11 +27,93 @@ class _LoginPageState extends State<LoginPage> {
   final bool _obscureText = true;
   bool isLoading = false;
 
-  // void _togglePasswordVisibility() {
-  //   setState(() {
-  //     _obscureText = !_obscureText;
-  //   });
-  // }
+  Future<void> _saveLoginUserId(String loginUserId) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('login_user_id', loginUserId);
+  }
+
+  Future<void> loginUser(String mobile, String password) async {
+    const String url = ApiConstants.loginEndpoint;
+
+    try {
+      setState(() {
+        isLoading = true;
+      });
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {
+          'enc_key': encKey,
+          'mobile': mobile,
+          'password': password,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseBody = jsonDecode(response.body);
+
+        if (responseBody['status'] == 'Success') {
+          final String loginUserId = responseBody['login_user_id'];
+          await _saveLoginUserId(loginUserId);
+
+          showCustomToastification(
+            context: context,
+            type: ToastificationType.success,
+            title: 'Logged in successfully!',
+            icon: Icons.check,
+            primaryColor: Colors.green,
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+          );
+
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const HomePage(),
+            ),
+            (route) => false,
+          );
+        } else {
+          showCustomToastification(
+            context: context,
+            type: ToastificationType.error,
+            title: 'Login failed!',
+            icon: Icons.error,
+            primaryColor: Colors.red,
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+          );
+        }
+      } else {
+        showCustomToastification(
+          context: context,
+          type: ToastificationType.error,
+          title: 'Server error! Please try again.',
+          icon: Icons.error,
+          primaryColor: Colors.red,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+        );
+      }
+    } catch (e) {
+      showCustomToastification(
+        context: context,
+        type: ToastificationType.error,
+        title: 'An error occurred! Please check your connection.',
+        icon: Icons.error,
+        primaryColor: Colors.red,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+      );
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -132,14 +219,6 @@ class _LoginPageState extends State<LoginPage> {
                           return null;
                         },
                         decoration: InputDecoration(
-                          // suffixIcon: IconButton(
-                          //   icon: Icon(
-                          //     _obscureText
-                          //         ? Icons.visibility_off
-                          //         : Icons.visibility,
-                          //   ),
-                          //   onPressed: _togglePasswordVisibility,
-                          // ),
                           filled: true,
                           fillColor: const Color(0xFFF9F9F9),
                           enabledBorder: OutlineInputBorder(
@@ -170,25 +249,14 @@ class _LoginPageState extends State<LoginPage> {
                         padding: const EdgeInsets.only(bottom: 20),
                         child: CustomButton(
                           text: 'Login',
-                          onPressed: () {
-                            // if (!formKey.currentState!.validate()) {
-                            //   return;
-                            // }
-                            showCustomToastification(
-                              context: context,
-                              type: ToastificationType.success,
-                              title: 'Logged in successfully!',
-                              icon: Icons.check,
-                              primaryColor: Colors.green,
-                              backgroundColor: Colors.white,
-                              foregroundColor: Colors.black,
-                            );
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const HomePage(),
-                              ),
-                              (route) => false,
+                          onPressed: () async {
+                            FocusScope.of(context).unfocus();
+                            if (!formKey.currentState!.validate()) {
+                              return;
+                            }
+                            await loginUser(
+                              mobController.text,
+                              passController.text,
                             );
                           },
                         ),

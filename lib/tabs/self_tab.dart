@@ -1,98 +1,137 @@
+import 'package:advocate_todo_list/const.dart';
 import 'package:advocate_todo_list/dialogs/info_dialog.dart';
-import 'package:advocate_todo_list/methods/methods.dart';
+import 'package:advocate_todo_list/model/todo_list_model.dart';
 import 'package:drag_and_drop_lists/drag_and_drop_lists.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
 class SelfTab extends StatefulWidget {
-  const SelfTab({super.key});
+  const SelfTab({
+    super.key,
+    this.toDoResponse,
+    required this.onTransfer,
+  });
+  final ToDoResponse? toDoResponse;
+  final VoidCallback onTransfer;
 
   @override
   State<SelfTab> createState() => _SelfTabState();
 }
 
 class _SelfTabState extends State<SelfTab> {
-  List<DragAndDropList> _lists = [];
+  final List<DragAndDropList> _lists = [];
 
   @override
   void initState() {
     super.initState();
+    _buildLists();
+  }
 
-    _lists = [
-      DragAndDropList(
-        decoration: const BoxDecoration(
-          color: Colors.white,
+  String _getContent(String? content) {
+    return content?.isEmpty ?? true ? 'Content name' : content!;
+  }
+
+  String _getPriority(String? priority) {
+    return priority?.isEmpty ?? true ? 'High' : priority!;
+  }
+
+  void _buildLists() {
+    if (widget.toDoResponse == null || widget.toDoResponse!.data!.isEmpty) {
+      return;
+    }
+
+    // Clear existing lists
+    _lists.clear();
+
+    // Create lists based on your ToDoResponse data
+    Map<String, List<DragAndDropItem>> categorizedItems = {
+      taskStatus['IN_PROGRESS']!: [],
+      taskStatus['PENDING']!: [],
+      taskStatus['COMPLETED']!: [],
+    };
+    final data = widget.toDoResponse!.data;
+
+    // Categorize items based on their status
+    for (int index = 0; index < data!.length; index++) {
+      var todo = data[index];
+
+      DragAndDropItem item = DragAndDropItem(
+        child: _buildListItem(
+          _getContent(todo.content),
+          index + 1,
+          _getPriorityColor(
+            _getPriority(todo.priority),
+          ),
+          () {
+            todoDetailsApi(
+              context,
+              todo.todoId!,
+              widget.onTransfer,
+            );
+          },
         ),
-        header: _buildListHeader('Work in Progress', const Color(0xFF659BFF)),
-        children: [
-          DragAndDropItem(
-            child: _buildListItem(
-              'My name is Krishna...',
-              1,
-              const Color(0xFFFF4400),
-            ),
+      );
+
+      // Categorize items based on their status
+      switch (todo.todoStatus) {
+        case 'Pending':
+          categorizedItems[taskStatus['PENDING']!]!.add(item);
+          break;
+        case 'Completed':
+          categorizedItems[taskStatus['COMPLETED']!]!.add(item);
+          break;
+        case 'In Progress':
+          categorizedItems[taskStatus['IN_PROGRESS']!]!.add(item);
+          break;
+      }
+    }
+
+    // Build DragAndDropList for each category
+    categorizedItems.forEach((title, items) {
+      _lists.add(
+        DragAndDropList(
+          decoration: const BoxDecoration(
+            color: Colors.white,
           ),
-          DragAndDropItem(
-            child: _buildListItem(
-              'My name is Swetha...',
-              2,
-              const Color(0xFF659BFF),
-            ),
-          ),
-        ],
-      ),
-      DragAndDropList(
-        decoration: const BoxDecoration(
-          color: Colors.white,
+          header: _buildListHeader(title, _getListColor(title)),
+          children: items,
         ),
-        header: _buildListHeader('Pending Task', const Color(0xFFFFC260)),
-        children: [
-          DragAndDropItem(
-            child: _buildListItem(
-              'My name is Sarath...',
-              1,
-              const Color(0xFFFF4400),
-            ),
-          ),
-          DragAndDropItem(
-            child: _buildListItem(
-              'My name is Rima...',
-              2,
-              const Color(0xFF659BFF),
-            ),
-          ),
-          DragAndDropItem(
-            child: _buildListItem(
-              'My name is Nandhini...',
-              3,
-              const Color(0xFFFFE100),
-            ),
-          ),
-        ],
-      ),
-      DragAndDropList(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-        ),
-        header: _buildListHeader('Completed Task', const Color(0xFF2DCB4A)),
-        children: [
-          DragAndDropItem(
-            child: _buildListItem(
-              'My name is Ripunjay...',
-              1,
-              const Color(0xFFFF4400),
-            ),
-          ),
-          DragAndDropItem(
-            child: _buildListItem(
-              'My name is Sam...',
-              2,
-              const Color(0xFF659BFF),
-            ),
-          ),
-        ],
-      ),
-    ];
+      );
+    });
+
+    debugPrint('Pending list = ${categorizedItems[taskStatus['PENDING']!]!}');
+    debugPrint(
+        'In progress list = ${categorizedItems[taskStatus['IN_PROGRESS']!]!}');
+    debugPrint(
+        'Completed list = ${categorizedItems[taskStatus['COMPLETED']!]!}');
+  }
+
+  // Get the appropriate color for the list header based on the title
+  Color _getListColor(String title) {
+    switch (title) {
+      case 'Work in Progress':
+        return const Color(0xFF659BFF);
+      case 'Pending Task':
+        return const Color(0xFFFFC260);
+      case 'Completed Task':
+        return const Color(0xFF2DCB4A);
+      default:
+        return Colors.grey;
+    }
+  }
+
+  // Get color based on priority
+  Color _getPriorityColor(String priority) {
+    switch (priority) {
+      case 'High':
+        return const Color(0xFFFF4400);
+      case 'Medium':
+        return const Color(0xFFFFE100);
+      case 'Low':
+        return const Color(0xFF659BFF);
+      default:
+        return Colors.grey;
+    }
   }
 
   Widget _buildListHeader(String title, Color color) {
@@ -128,16 +167,14 @@ class _SelfTabState extends State<SelfTab> {
     );
   }
 
-  Widget _buildListItem(String title, int number, Color color) {
+  Widget _buildListItem(
+    String title,
+    int number,
+    Color color,
+    void Function()? onTap,
+  ) {
     return GestureDetector(
-      onTap: () {
-        showInfoDialog(
-          context,
-          () {
-            scheduleNotification(context);
-          },
-        );
-      },
+      onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(
           vertical: 10,
@@ -236,29 +273,37 @@ class _SelfTabState extends State<SelfTab> {
   void _recalculateNumbers() {
     for (var list in _lists) {
       for (int i = 0; i < list.children.length; i++) {
-        var gesture = list.children[i].child as GestureDetector;
-        var padding1 = gesture.child as Padding;
-        var row1 = padding1.child as Row;
+        var dragAndDropItem = list.children[i];
+        if (dragAndDropItem.child is GestureDetector) {
+          var gesture = list.children[i].child as GestureDetector;
+          var onTap = gesture.onTap;
+          var padding1 = gesture.child as Padding;
+          var row1 = padding1.child as Row;
 
-        var expanded1 = row1.children[2] as Expanded;
-        var container1 = expanded1.child as Container;
-        var row2 = container1.child as Row;
+          var expanded1 = row1.children[2] as Expanded;
+          var container1 = expanded1.child as Container;
+          var row2 = container1.child as Row;
 
-        var currentText = row2.children[4] as Text;
-        String title = currentText.data ?? '';
+          var currentText = row2.children[4] as Text;
+          String title = currentText.data ?? '';
 
-        Color color;
-        var firstChild = row2.children[0] as Container;
+          Color color;
+          var firstChild = row2.children[0] as Container;
 
-        if (firstChild.decoration is BoxDecoration) {
-          color = (firstChild.decoration as BoxDecoration).color ?? Colors.grey;
+          if (firstChild.decoration is BoxDecoration) {
+            color =
+                (firstChild.decoration as BoxDecoration).color ?? Colors.grey;
+          } else {
+            color = Colors.grey;
+          }
+
+          list.children[i] = DragAndDropItem(
+            child: _buildListItem(title, i + 1, color, onTap),
+          );
         } else {
-          color = Colors.grey;
+          debugPrint(
+              "Expected GestureDetector but found: ${dragAndDropItem.child.runtimeType}");
         }
-
-        list.children[i] = DragAndDropItem(
-          child: _buildListItem(title, i + 1, color),
-        );
       }
     }
   }

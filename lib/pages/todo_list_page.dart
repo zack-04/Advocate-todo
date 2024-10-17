@@ -1,4 +1,10 @@
+import 'dart:convert';
+
+import 'package:advocate_todo_list/const.dart';
+import 'package:advocate_todo_list/methods/api_methods.dart';
+import 'package:advocate_todo_list/model/todo_list_model.dart';
 import 'package:advocate_todo_list/tabs/assigned_tab.dart';
+import 'package:advocate_todo_list/tabs/buzz_tab.dart';
 import 'package:advocate_todo_list/tabs/others_tab.dart';
 import 'package:advocate_todo_list/tabs/self_tab.dart';
 import 'package:advocate_todo_list/widgets/custom_button.dart';
@@ -8,6 +14,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:toastification/toastification.dart';
+import 'package:http/http.dart' as http;
 
 class TodoListPage extends StatefulWidget {
   const TodoListPage({super.key});
@@ -20,13 +27,46 @@ class _TodoListPageState extends State<TodoListPage> {
   int _selectedIndex = 0;
   bool showCreateForm = false;
   final List<String> _tabs = ['Self', 'Assigned', 'Buzz', 'Others'];
-  final List<int> _badges = [22, 1, 0, 0];
+  int selfCount = 0;
+  int approvalCount = 0;
+  List<ToDoResponse?> tabData = [];
+  bool isLoading = false;
 
-  void _onTabTapped(int index) {
+  @override
+  void initState() {
+    super.initState();
+    fetchData();
+  }
+
+  // @override
+  // void didChangeDependencies() {
+  //   super.didChangeDependencies();
+  //   fetchData();
+  // }
+
+  void _onTabTapped(int index) async {
     if (!showCreateForm) {
       setState(() {
         _selectedIndex = index;
       });
+      String tabType = '';
+      if (index == 0) {
+        tabType = 'Self';
+        debugPrint('Tab = $tabType');
+      } else if (index == 1) {
+        debugPrint('Tab = $tabType');
+        tabType = 'Assigned';
+      } else if (index == 3) {
+        debugPrint('Tab = $tabType');
+        tabType = 'Others';
+      }
+      String? empId = await getLoginUserId();
+      debugPrint('Id = $empId');
+      if (tabType.isNotEmpty) {
+        debugPrint('Not empty');
+        debugPrint('Tabin = $tabType');
+        await fetchTodoList(tabType, empId!);
+      }
     }
   }
 
@@ -41,39 +81,104 @@ class _TodoListPageState extends State<TodoListPage> {
     });
   }
 
+  Future<void> fetchData() async {
+    setState(() {
+      isLoading = true;
+    });
+    String? empId = await getLoginUserId();
+    try {
+      final results = await Future.wait([
+        fetchTodoList('Self', empId!),
+        fetchTodoList('Assigned', empId),
+        fetchTodoList('Others', empId),
+      ]);
+      debugPrint('Results = $results');
+      debugPrint('Length = ${results.length}');
+
+      // Handle the results
+      for (var result in results) {
+        debugPrint('Result = ${result.toString()}');
+      }
+
+      setState(() {
+        tabData = results;
+        selfCount = int.parse(results[0]!.selfCount!);
+        approvalCount = int.parse(results[0]!.approvalCount!);
+      });
+    } catch (e) {
+      print('An error occurred: $e');
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: Text(
-          'To Do List',
-          style: GoogleFonts.inter(
-            fontSize: 25.0,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(showCreateForm ? Icons.close : Icons.add),
-            onPressed: toggleCreateForm,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          _buildTabBar(),
-          Expanded(
-            child: showCreateForm
-                ? SingleChildScrollView(
-                    child: ToDoCreationForm(onPressed: toggleCreateForm),
-                  )
-                : _buildTabContent(),
-          ),
-        ],
-      ),
+      body: isLoading
+          ? const Center(
+              child: CircularProgressIndicator(),
+            )
+          : SafeArea(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 20, right: 15),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'To Do List',
+                          style: GoogleFonts.inter(
+                            fontSize: 25.0,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(showCreateForm ? Icons.close : Icons.add),
+                          onPressed: toggleCreateForm,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildTabBar(),
+                  Expanded(
+                    child: showCreateForm
+                        ? SingleChildScrollView(
+                            child: ToDoCreationForm(
+                              onPressed: () async {
+                                debugPrint('Refresh');
+                                await fetchData();
+                                toggleCreateForm();
+                              },
+                            ),
+                          )
+                        : _buildTabContent(),
+                  ),
+                ],
+              ),
+            ),
     );
+  }
+
+  Future<void> _refreshSelfTab() async {
+    debugPrint('Refresh in');
+    String? empId = await getLoginUserId();
+    await fetchTodoList('Self', empId!);
+  }
+
+  Future<void> _refreshAssignedTab() async {
+    String? empId = await getLoginUserId();
+    await fetchTodoList('Others', empId!);
+  }
+
+  Future<void> _refreshOthersTab() async {
+    String? empId = await getLoginUserId();
+    await fetchTodoList('Others', empId!);
   }
 
   Widget _buildTabBar() {
@@ -116,20 +221,8 @@ class _TodoListPageState extends State<TodoListPage> {
                               : FontWeight.normal,
                         ),
                       ),
-                      if (_badges[index] > 0) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            shape: BoxShape.circle,
-                          ),
-                          child: Text(
-                            '${_badges[index]}',
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        ),
-                      ],
+                      const SizedBox(width: 8),
+                      _containerWidget(_tabs[index]),
                     ],
                   ),
                 ),
@@ -141,6 +234,35 @@ class _TodoListPageState extends State<TodoListPage> {
     );
   }
 
+  Widget _containerWidget(String tabType) {
+    if (tabType == 'Self' && selfCount > 0) {
+      return Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: Colors.grey[300],
+          shape: BoxShape.circle,
+        ),
+        child: Text(
+          '$selfCount',
+          style: const TextStyle(fontSize: 12),
+        ),
+      );
+    } else if (tabType == 'Assigned' && approvalCount > 0) {
+      return Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: Colors.grey[300],
+          shape: BoxShape.circle,
+        ),
+        child: Text(
+          '$approvalCount',
+          style: const TextStyle(fontSize: 12),
+        ),
+      );
+    }
+    return const SizedBox();
+  }
+
   Widget _buildTabContent() {
     if (_selectedIndex < 0 || _selectedIndex >= _tabs.length) {
       return const Center(
@@ -148,17 +270,27 @@ class _TodoListPageState extends State<TodoListPage> {
       );
     }
     List<Widget> tabViews = [
-      const SelfTab(),
-      const AssignedTab(),
+      SelfTab(
+        toDoResponse: tabData[0],
+        onTransfer: () => fetchData,
+      ),
+      AssignedTab(
+        toDoResponse: tabData[1],
+        onRefresh: () => _refreshAssignedTab(),
+      ),
       const Center(
-        child: Text(
-          'Buzz Tab Content',
-          style: TextStyle(
-            fontSize: 18,
+        child: Padding(
+          padding: EdgeInsets.only(bottom: 50),
+          child: Text(
+            'Buzz tab',
+            style: TextStyle(fontSize: 20),
           ),
         ),
       ),
-      const OthersTab(),
+      OthersTab(
+        toDoResponse: tabData[2],
+        onRefresh: () => _refreshOthersTab(),
+      ),
     ];
 
     return tabViews[_selectedIndex];
@@ -170,7 +302,7 @@ class ToDoCreationForm extends StatefulWidget {
     super.key,
     required this.onPressed,
   });
-  final void Function() onPressed;
+  final Future<void> Function() onPressed;
 
   @override
   State<ToDoCreationForm> createState() => _ToDoCreationFormState();
@@ -178,14 +310,12 @@ class ToDoCreationForm extends StatefulWidget {
 
 class _ToDoCreationFormState extends State<ToDoCreationForm> {
   final TextEditingController controller = TextEditingController();
-
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-
   final FocusNode focusNode = FocusNode();
-
   String selectedPriority = 'High';
   bool isDropdownOpen = false;
   DateTime selectedDate = DateTime.now();
+  bool isLoading = false;
 
   // Function to show date picker
   Future<void> _selectDate(BuildContext context) async {
@@ -212,6 +342,84 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
         return Colors.blue[900]!;
       default:
         return Colors.transparent;
+    }
+  }
+
+  Future<void> todoCreation() async {
+    String? empId = await getLoginUserId();
+    debugPrint('Id = $empId');
+    String formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate);
+    debugPrint('Formatted date = $formattedDate');
+    const String url = ApiConstants.todoCreationEndPoint;
+
+    try {
+      setState(() {
+        isLoading = true;
+      });
+
+      final response = await http.post(
+        Uri.parse(url),
+        body: {
+          'enc_key': encKey,
+          'emp_id': empId,
+          'todo': controller.text,
+          'priority': selectedPriority,
+          'due_date': formattedDate,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseBody = jsonDecode(response.body);
+
+        if (responseBody['status'] == 'Success') {
+          showCustomToastification(
+            context: context,
+            type: ToastificationType.success,
+            title: 'Todo created successfully!',
+            icon: Icons.check,
+            primaryColor: Colors.green,
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+          );
+          await widget.onPressed();
+        } else {
+          showCustomToastification(
+            context: context,
+            type: ToastificationType.error,
+            title: responseBody['status'],
+            icon: Icons.error,
+            primaryColor: Colors.red,
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+          );
+        }
+      } else {
+        showCustomToastification(
+          context: context,
+          type: ToastificationType.error,
+          title: 'Server error! Please try again.',
+          icon: Icons.error,
+          primaryColor: Colors.red,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+        );
+      }
+    } catch (e) {
+      showCustomToastification(
+        context: context,
+        type: ToastificationType.error,
+        title: 'An error occurred! Please check your connection.',
+        icon: Icons.error,
+        primaryColor: Colors.red,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -376,17 +584,8 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
                 const SizedBox(height: 40),
                 CustomButton(
                   text: 'Create List',
-                  onPressed: () {
-                    showCustomToastification(
-                      context: context,
-                      type: ToastificationType.success,
-                      title: 'Created successfully!',
-                      icon: Icons.check,
-                      primaryColor: Colors.green,
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black,
-                    );
-                    widget.onPressed();
+                  onPressed: () async {
+                    await todoCreation();
                   },
                 ),
                 const SizedBox(height: 100),

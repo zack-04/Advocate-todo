@@ -1,32 +1,51 @@
 import 'package:advocate_todo_list/dialogs/info_dialog.dart';
+import 'package:advocate_todo_list/model/todo_list_model.dart';
 import 'package:advocate_todo_list/widgets/toast_message.dart';
 import 'package:flutter/material.dart';
 import 'package:toastification/toastification.dart';
 
 class OthersTab extends StatelessWidget {
-  const OthersTab({super.key});
+  const OthersTab({super.key, this.toDoResponse, required this.onRefresh});
+  final ToDoResponse? toDoResponse;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
+    Color getPriorityColor(String priority) {
+      switch (priority) {
+        case 'High':
+          return const Color(0xFFFF4400);
+        case 'Medium':
+          return const Color(0xFFFFE100);
+        case 'Low':
+          return const Color(0xFF659BFF);
+        default:
+          return Colors.grey;
+      }
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-        child: Column(
-          children: [
-            _listItem(
-              'This is others item 1...',
-              1,
-              const Color(0xFFFF4400),
-              context,
-            ),
-            _listItem(
-              'This is others item 2...',
-              2,
-              const Color(0xFF659BFF),
-              context,
-            ),
-          ],
+        child: RefreshIndicator(
+          onRefresh: onRefresh,
+          child: ListView.builder(
+            itemCount: toDoResponse!.data!.length + 1,
+            itemBuilder: (context, index) {
+              if (index < toDoResponse!.data!.length) {
+                final data = toDoResponse!.data![index];
+                return _listItem(
+                  data.content!,
+                  index + 1,
+                  getPriorityColor(data.priority!),
+                  context,
+                );
+              } else {
+                return const SizedBox(height: 100);
+              }
+            },
+          ),
         ),
       ),
     );
@@ -36,12 +55,12 @@ class OthersTab extends StatelessWidget {
 Widget _listItem(String title, int number, Color color, BuildContext context) {
   return GestureDetector(
     onTap: () {
-      showInfoDialog(
-        context,
-        () {
-          pickDateAndTime(context);
-        },
-      );
+      // showInfoDialog(
+      //   context,
+      //   () {
+      //     pickDateAndTime(context);
+      //   },
+      // );
     },
     child: Padding(
       padding: const EdgeInsets.symmetric(

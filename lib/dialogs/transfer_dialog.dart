@@ -1,22 +1,80 @@
+import 'package:advocate_todo_list/const.dart';
+import 'package:advocate_todo_list/model/user_model.dart';
+import 'package:advocate_todo_list/widgets/toast_message.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'package:toastification/toastification.dart';
 
 class TransferDialog extends StatefulWidget {
-  const TransferDialog({super.key});
+  const TransferDialog({
+    super.key,
+    required this.userDataResponse,
+    required this.todoId,
+    required this.onTransfer,
+  });
+  final UserDataResponse userDataResponse;
+  final String todoId;
+  final VoidCallback onTransfer;
 
   @override
-  _TransferDialogState createState() => _TransferDialogState();
+  State<TransferDialog> createState() => _TransferDialogState();
 }
 
 class _TransferDialogState extends State<TransferDialog> {
   String? selectedPerson;
-  final List<String> persons = [
-    'Sarath Kumar',
-    'Suresh',
-    'Mahesh',
-    'Sudharshan',
-    'Maheshwari'
-  ];
+  final TextEditingController controller = TextEditingController();
+
+  Future<void> tranferToOtherUser() async {
+    String? empId = await getLoginUserId();
+    debugPrint('empid: $empId');
+    debugPrint('Todo id: ${widget.todoId}');
+    const String url = ApiConstants.tranferEndPoint;
+    if (selectedPerson==null) {
+      showCustomToastification(
+        context: context,
+        type: ToastificationType.error,
+        title: 'Please select a user',
+        icon: Icons.error,
+        primaryColor: Colors.red,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+      );
+      return;
+    }
+
+    final request = http.MultipartRequest('POST', Uri.parse(url))
+      ..fields['enc_key'] = encKey
+      ..fields['emp_id'] = empId!
+      ..fields['transfer_to'] = selectedPerson!
+      ..fields['todo_id'] = widget.todoId
+      ..fields['remarks'] = controller.text;
+
+    try {
+      final response = await request.send();
+      if (response.statusCode == 200) {
+        final responseBody = await response.stream.bytesToString();
+        debugPrint('Transfer body: $responseBody');
+        if (mounted) {
+          showCustomToastification(
+            context: context,
+            type: ToastificationType.success,
+            title: 'Transferred successfully!',
+            icon: Icons.check,
+            primaryColor: Colors.green,
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+          );
+          Navigator.pop(context);
+          widget.onTransfer();
+        }
+      } else {
+        debugPrint('Failed: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Error id: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +85,6 @@ class _TransferDialogState extends State<TransferDialog> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(10),
         ),
-        // width: MediaQuery.of(context).size.width,
         padding: const EdgeInsets.only(
           top: 20,
           right: 20,
@@ -52,12 +109,13 @@ class _TransferDialogState extends State<TransferDialog> {
             // Radio button list
             ListView.builder(
               shrinkWrap: true,
-              itemCount: persons.length,
+              itemCount: widget.userDataResponse.data.length,
               itemBuilder: (context, index) {
+                final data = widget.userDataResponse.data;
                 return GestureDetector(
                   onTap: () {
                     setState(() {
-                      selectedPerson = persons[index];
+                      selectedPerson = data[index].userId;
                     });
                   },
                   child: Padding(
@@ -68,17 +126,17 @@ class _TransferDialogState extends State<TransferDialog> {
                     child: Row(
                       children: [
                         Icon(
-                          selectedPerson == persons[index]
+                          selectedPerson == data[index].userId
                               ? Icons.radio_button_checked
                               : Icons.radio_button_off,
-                          color: selectedPerson == persons[index]
+                          color: selectedPerson == data[index].userId
                               ? Colors.black
                               : Colors.grey,
                           size: 18,
                         ),
                         const SizedBox(width: 15),
                         Text(
-                          persons[index],
+                          data[index].name,
                           style: const TextStyle(fontSize: 15),
                         ),
                       ],
@@ -92,6 +150,7 @@ class _TransferDialogState extends State<TransferDialog> {
             Padding(
               padding: const EdgeInsets.only(left: 20),
               child: TextField(
+                controller: controller,
                 decoration: InputDecoration(
                   hintText: 'Remarks',
                   hintStyle: GoogleFonts.inter(
@@ -164,8 +223,8 @@ class _TransferDialogState extends State<TransferDialog> {
                         borderRadius: BorderRadius.circular(5),
                       ),
                       color: const Color(0xFF4B4B4B),
-                      onPressed: () {
-                        Navigator.pop(context);
+                      onPressed: () async {
+                        await tranferToOtherUser();
                       },
                       child: Text(
                         'Transfer Now',
@@ -186,11 +245,20 @@ class _TransferDialogState extends State<TransferDialog> {
   }
 }
 
-void showTransferDialog(BuildContext context) {
+void showTransferDialog(
+  BuildContext context,
+  UserDataResponse userDataResponse,
+  String todoId,
+  VoidCallback onTransfer,
+) {
   showDialog(
     context: context,
     builder: (BuildContext context) {
-      return const TransferDialog();
+      return TransferDialog(
+        userDataResponse: userDataResponse,
+        todoId: todoId,
+        onTransfer: () => onTransfer,
+      );
     },
   );
 }
