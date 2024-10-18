@@ -38,12 +38,6 @@ class _TodoListPageState extends State<TodoListPage> {
     fetchData();
   }
 
-  // @override
-  // void didChangeDependencies() {
-  //   super.didChangeDependencies();
-  //   fetchData();
-  // }
-
   void _onTabTapped(int index) async {
     if (!showCreateForm) {
       setState(() {

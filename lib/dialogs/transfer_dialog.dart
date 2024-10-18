@@ -30,16 +30,18 @@ class _TransferDialogState extends State<TransferDialog> {
     debugPrint('empid: $empId');
     debugPrint('Todo id: ${widget.todoId}');
     const String url = ApiConstants.tranferEndPoint;
-    if (selectedPerson==null) {
-      showCustomToastification(
-        context: context,
-        type: ToastificationType.error,
-        title: 'Please select a user',
-        icon: Icons.error,
-        primaryColor: Colors.red,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-      );
+    if (selectedPerson == null) {
+      if (mounted) {
+        showCustomToastification(
+          context: context,
+          type: ToastificationType.error,
+          title: 'Please select a user',
+          icon: Icons.error,
+          primaryColor: Colors.red,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+        );
+      }
       return;
     }
 

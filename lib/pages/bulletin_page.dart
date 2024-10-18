@@ -134,21 +134,21 @@ class _BulletinPageState extends State<BulletinPage> {
               isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : Expanded(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: bulletinData.length,
-                  physics: const BouncingScrollPhysics(),
-                  itemBuilder: (context, index) {
-                    final item = bulletinData[index];
-                    return CustomContainer(
-                      creatorName: item['creator_name'] ?? 'Unknown',
-                      updatedTime: item['updated_time'] ?? 'N/A',
-                      bulletinContent: item['bulletin_content'] ?? '',
-                      bulletinType: item['type'] ?? 'Text',
-                    );
-                  },
-                ),
-              ),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: bulletinData.length,
+                        physics: const BouncingScrollPhysics(),
+                        itemBuilder: (context, index) {
+                          final item = bulletinData[index];
+                          return CustomContainer(
+                            creatorName: item['creator_name'] ?? 'Unknown',
+                            updatedTime: item['updated_time'] ?? 'N/A',
+                            bulletinContent: item['bulletin_content'] ?? '',
+                            bulletinType: item['type'] ?? 'Text',
+                          );
+                        },
+                      ),
+                    ),
               const SizedBox(height: 120),
             ],
           ),
