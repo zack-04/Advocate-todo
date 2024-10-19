@@ -10,9 +10,11 @@ class SelfTab extends StatefulWidget {
     super.key,
     this.toDoResponse,
     required this.onTransfer,
+    required this.onRefresh,
   });
   final ToDoResponse? toDoResponse;
   final VoidCallback onTransfer;
+  final Future<void> Function() onRefresh;
 
   @override
   State<SelfTab> createState() => _SelfTabState();
@@ -173,64 +175,69 @@ class _SelfTabState extends State<SelfTab> {
     Color color,
     void Function()? onTap,
   ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          vertical: 10,
-          horizontal: 4,
-        ),
-        child: Row(
-          children: [
-            SvgPicture.asset(
-              'assets/icons/drag.svg',
-              width: 20,
-              height: 20,
-              fit: BoxFit.cover,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Container(
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x40000000),
-                      offset: Offset(0, 4),
-                      blurRadius: 4,
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 10,
-                      height: 40,
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: color,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(10),
-                          bottomLeft: Radius.circular(10),
+    return Material(
+      color: Colors.white,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            vertical: 10,
+            horizontal: 4,
+          ),
+          child: Row(
+            children: [
+              SvgPicture.asset(
+                'assets/icons/drag.svg',
+                width: 20,
+                height: 20,
+                fit: BoxFit.cover,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Container(
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x40000000),
+                        offset: Offset(0, 4),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 40,
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: color,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(10),
+                            bottomLeft: Radius.circular(10),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      '$number.',
-                      style: const TextStyle(
-                        color: Colors.black,
+                      const SizedBox(width: 12),
+                      Text(
+                        '$number.',
+                        style: const TextStyle(
+                          color: Colors.black,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(title),
-                  ],
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(title),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -242,15 +249,20 @@ class _SelfTabState extends State<SelfTab> {
       backgroundColor: Colors.white,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: DragAndDropLists(
-          children: _lists,
-          onItemReorder: _onItemReorder,
-          onListReorder: (oldListIndex, newListIndex) {},
-          listPadding: const EdgeInsets.symmetric(vertical: 8),
-          itemDivider: const Divider(thickness: 0.5, height: 0.5),
-          listDecoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(8),
+        child: RefreshIndicator(
+          onRefresh: widget.onRefresh,
+          color: Colors.black,
+          backgroundColor: Colors.white,
+          child: DragAndDropLists(
+            children: _lists,
+            onItemReorder: _onItemReorder,
+            onListReorder: (oldListIndex, newListIndex) {},
+            listPadding: const EdgeInsets.symmetric(vertical: 8),
+            itemDivider: const Divider(thickness: 0.5, height: 0.5),
+            listDecoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
         ),
       ),
@@ -274,17 +286,19 @@ class _SelfTabState extends State<SelfTab> {
     for (var list in _lists) {
       for (int i = 0; i < list.children.length; i++) {
         var dragAndDropItem = list.children[i];
-        if (dragAndDropItem.child is GestureDetector) {
-          var gesture = list.children[i].child as GestureDetector;
-          var onTap = gesture.onTap;
-          var padding1 = gesture.child as Padding;
+        if (dragAndDropItem.child is Material) {
+          var material = list.children[i].child as Material;
+          var inkWell = material.child as InkWell;
+          var onTap = inkWell.onTap;
+          var padding1 = inkWell.child as Padding;
           var row1 = padding1.child as Row;
 
           var expanded1 = row1.children[2] as Expanded;
           var container1 = expanded1.child as Container;
           var row2 = container1.child as Row;
 
-          var currentText = row2.children[4] as Text;
+          var expanded = row2.children[4] as Expanded;
+          var currentText = expanded.child as Text;
           String title = currentText.data ?? '';
 
           Color color;

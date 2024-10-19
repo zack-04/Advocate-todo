@@ -30,7 +30,7 @@ class _InfoDialogState extends State<InfoDialog> {
     const String url = ApiConstants.activeUserEndPoint;
 
     final request = http.MultipartRequest('POST', Uri.parse(url))
-      ..fields['enc_key'] = 'iq8xkfInuzVYYnE4YIpapvQUg6uU'
+      ..fields['enc_key'] = encKey
       ..fields['emp_id'] = empId!;
 
     try {
@@ -93,21 +93,27 @@ class _InfoDialogState extends State<InfoDialog> {
                       debugPrint('Todo id = ${data.todoId!}');
                       await scheduleNotification(context, data.todoId!);
                     },
-                    child: const Icon(
-                      Icons.alarm,
-                      size: 20,
-                      color: Color(0xFF545454),
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      child: const Icon(
+                        Icons.alarm,
+                        size: 20,
+                        color: Color(0xFF545454),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 15),
+                  const SizedBox(width: 5),
                   GestureDetector(
                     onTap: () {
                       Navigator.pop(context);
                     },
-                    child: const Icon(
-                      Icons.close,
-                      size: 25,
-                      color: Color(0xFF545454),
+                    child: const Padding(
+                      padding: EdgeInsets.all(10),
+                      child: Icon(
+                        Icons.close,
+                        size: 25,
+                        color: Color(0xFF545454),
+                      ),
                     ),
                   ),
                 ],
@@ -169,6 +175,24 @@ class _InfoDialogState extends State<InfoDialog> {
   }
 }
 
+void showLoaderDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext context) {
+      return const Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Center(
+          child: CircularProgressIndicator(
+            color: Colors.white,
+          ),
+        ),
+      );
+    },
+  );
+}
+
 Future<void> todoDetailsApi(
   BuildContext context,
   String todoId,
@@ -178,6 +202,7 @@ Future<void> todoDetailsApi(
   debugPrint('Id = $empId');
   debugPrint('api todo id = $todoId');
   const String url = ApiConstants.todoDetailsEndPoint;
+  showLoaderDialog(context);
 
   try {
     final response = await http.post(
@@ -188,6 +213,7 @@ Future<void> todoDetailsApi(
         'todo_id': todoId,
       },
     );
+    Navigator.pop(context);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> responseBody = jsonDecode(response.body);
@@ -195,6 +221,7 @@ Future<void> todoDetailsApi(
       if (responseBody['status'] == 'Success') {
         final todoDetailsResponse = ToDoDetailsResponse.fromJson(responseBody);
         print('Response body = $responseBody');
+
         showDialog(
           context: context,
           builder: (BuildContext context) {

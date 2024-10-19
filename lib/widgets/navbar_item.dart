@@ -20,13 +20,15 @@ class NavbarItem extends StatelessWidget {
       padding: const EdgeInsets.only(
         left: 5,
         right: 5,
+        top: 5,
+        bottom: 5,
       ),
       child: GestureDetector(
         onTap: onTap,
         child: Container(
           width: 80,
           height: 65,
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(50),
             color: bgColor,

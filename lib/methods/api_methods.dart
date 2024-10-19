@@ -10,7 +10,7 @@ Future<ToDoResponse?> fetchTodoList(String tabType, String empId) async {
   const String url = ApiConstants.todoListEndPoint;
 
   final request = http.MultipartRequest('POST', Uri.parse(url))
-    ..fields['enc_key'] = 'iq8xkfInuzVYYnE4YIpapvQUg6uU'
+    ..fields['enc_key'] = encKey
     ..fields['emp_id'] = empId
     ..fields['type'] = tabType;
 
