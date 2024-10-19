@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:advocate_todo_list/widgets/image_container.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
@@ -13,6 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:toastification/toastification.dart';
 
 import '../const.dart';
+import '../main.dart';
 import '../widgets/toast_message.dart';
 
 class CaseListPage extends StatefulWidget {
@@ -33,7 +35,7 @@ class _CaseListPageState extends State<CaseListPage> {
       context: context,
       initialDate: selectedDate,
       firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
+      lastDate: DateTime(2050),
     );
 
     if (pickedDate != null && pickedDate != selectedDate) {
@@ -105,10 +107,57 @@ class _CaseListPageState extends State<CaseListPage> {
     }
   }
 
+  late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
+
   @override
   void initState() {
     super.initState();
     _getLoginUserIdAndFetchData();
+    _initializeNotifications();
+  }
+
+  void _initializeNotifications() {
+    flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+    const AndroidInitializationSettings androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher'); // App icon
+
+    const InitializationSettings initSettings =
+        InitializationSettings(android: androidSettings);
+
+    flutterLocalNotificationsPlugin.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: _onNotificationResponse,
+    );
+
+    _createNotificationChannel(); // Create the notification channel
+  }
+
+  void _createNotificationChannel() async {
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'download_channel', // Channel ID
+      'Image Downloads', // Channel Name
+      description: 'Notifications for image downloads', // Channel Description
+      importance: Importance.low, // Set to low or default to avoid heads-up
+    );
+
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+  }
+
+  void _onNotificationResponse(NotificationResponse response) async {
+    final String? payload = response.payload;
+    if (payload != null) {
+      print('Notification payload: $payload');
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ImagePreviewPage(imagePath: payload),
+        ),
+      );
+    }
   }
 
   Future<void> _getLoginUserIdAndFetchData() async {
@@ -142,37 +191,37 @@ class _CaseListPageState extends State<CaseListPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(12),
-                height: 50,
-                width: 190,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(
-                    color: Colors.black,
-                    width: 1,
+              GestureDetector(
+                onTap: () => _selectDate(context),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  height: 50,
+                  width: 190,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(
+                      color: Colors.black,
+                      width: 1,
+                    ),
+                    borderRadius: BorderRadius.circular(30),
                   ),
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 10),
-                        child: Text(
-                          DateFormat('dd-MMM-yyyy').format(selectedDate),
-                          style: GoogleFonts.inter(
-                            fontSize: 15.0,
-                            fontWeight: FontWeight.w500,
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 10),
+                          child: Text(
+                            DateFormat('dd-MMM-yyyy').format(selectedDate),
+                            style: GoogleFonts.inter(
+                              fontSize: 15.0,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
-                      ),
-                      GestureDetector(
-                        child: const Icon(Icons.arrow_drop_down_sharp),
-                        onTap: () => _selectDate(context),
-                      ),
-                    ],
+                        const Icon(Icons.arrow_drop_down_sharp),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -180,34 +229,34 @@ class _CaseListPageState extends State<CaseListPage> {
               isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : Expanded(
-                child: causeList.isEmpty
-                    ? const Center(
-                    child: Text(
-                      "No Cause List",
-                      style: TextStyle(
-                          fontWeight: FontWeight.w500, fontSize: 24),
-                    ))
-                    : SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: Column(
-                    children: [
-                      for (var cause in causeList)
-                        Padding(
-                          padding:
-                          const EdgeInsets.only(bottom: 20),
-                          child: ImageContainer(
-                            path:
-                            Uri.encodeFull(cause['cause_file']),
-                            fileName: cause['title'],
-                            downloadUrl:
-                            Uri.encodeFull(cause['cause_file']),
-                          ),
-                        ),
-                      const SizedBox(height: 130),
-                    ],
-                  ),
-                ),
-              ),
+                      child: causeList.isEmpty
+                          ? const Center(
+                              child: Text(
+                              "No Cause List",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w500, fontSize: 24),
+                            ))
+                          : SingleChildScrollView(
+                              physics: const BouncingScrollPhysics(),
+                              child: Column(
+                                children: [
+                                  for (var cause in causeList)
+                                    Padding(
+                                      padding:
+                                          const EdgeInsets.only(bottom: 20),
+                                      child: ImageContainer(
+                                        path:
+                                            Uri.encodeFull(cause['cause_file']),
+                                        fileName: cause['title'],
+                                        downloadUrl:
+                                            Uri.encodeFull(cause['cause_file']),
+                                      ),
+                                    ),
+                                  const SizedBox(height: 130),
+                                ],
+                              ),
+                            ),
+                    ),
             ],
           ),
         ),
@@ -225,8 +274,8 @@ class ImageContainer extends StatelessWidget {
     required this.path,
     required this.fileName,
     required this.downloadUrl,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   Future<void> downloadImage(
       String url, String fileName, BuildContext context) async {
@@ -239,35 +288,63 @@ class ImageContainer extends StatelessWidget {
         final folder = Directory(imagePath);
         if (!await folder.exists()) {
           await folder.create(recursive: true);
-          print("Created directory: $imagePath");
-        } else {
-          print("Directory already exists: $imagePath");
         }
 
         String fileExtension = url.split('.').last;
         String completeFileName = '$fileName.$fileExtension';
-
         final file = File('$imagePath$completeFileName');
 
         await file.writeAsBytes(response.bodyBytes);
-        print(
-            "Image downloaded to: ${file.path}");
+
         showCustomToastification(
           context: context,
-          type: ToastificationType
-              .success,
+          type: ToastificationType.success,
           title: 'Successfully Downloaded',
           icon: Icons.check,
           primaryColor: Colors.green,
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
+          onTap: () {
+            // Navigate to ImagePreviewPage when the toast is clicked
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ImagePreviewPage(imagePath: file.path),
+              ),
+            );
+          },
         );
+
+        _showDownloadNotification(completeFileName, file.path);
       } else {
         print("Failed to download image. Status code: ${response.statusCode}");
       }
     } catch (e) {
       print("Error downloading image: $e");
     }
+  }
+
+  void _showDownloadNotification(String title, String imagePath) async {
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+      'download_channel', // Channel ID
+      'Image Downloads', // Channel name
+      channelDescription: 'Notifications for image downloads',
+      importance: Importance.low,
+      priority: Priority.low,
+      ticker: 'ticker',
+    );
+
+    const NotificationDetails notificationDetails =
+        NotificationDetails(android: androidDetails);
+
+    await flutterLocalNotificationsPlugin.show(
+      0, // Notification ID
+      'Image Downloaded',
+      title,
+      notificationDetails,
+      payload: imagePath, // Pass the file path as payload
+    );
   }
 
   Future<void> requestPermission(BuildContext context) async {
@@ -289,7 +366,6 @@ class ImageContainer extends StatelessWidget {
     } else {
       print("Requesting Permission");
 
-
       if (Platform.isAndroid && await _isAtLeastAndroid11()) {
         status = await Permission.manageExternalStorage.request();
         print("Manage External Storage Permission Request Result: $status");
@@ -299,7 +375,6 @@ class ImageContainer extends StatelessWidget {
       }
 
       if (status.isGranted) {
-
         print("Permission granted after request");
         downloadImage(downloadUrl, fileName, context);
       } else {
@@ -307,13 +382,12 @@ class ImageContainer extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content:
-            Text('Storage permission is required to download the image.'),
+                Text('Storage permission is required to download the image.'),
           ),
         );
       }
     }
   }
-
 
   Future<bool> _isAtLeastAndroid11() async {
     if (Platform.isAndroid) {
@@ -325,63 +399,82 @@ class ImageContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(15),
-              topRight: Radius.circular(15),
-            ),
-            border: Border.all(color: Colors.black, width: 1),
-          ),
-          child: ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(15),
-              topRight: Radius.circular(15),
-            ),
-            child: Image.network(
-              path,
-              fit: BoxFit.cover,
-              height: 200,
-              width: double.infinity,
-            ),
-          ),
-        ),
-
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(15),
-              bottomRight: Radius.circular(15),
-            ),
-            border: Border.all(color: Colors.black, width: 1),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                fileName,
-                style: const TextStyle(fontWeight: FontWeight.bold),
+    return GestureDetector(
+      onTap: () {
+        requestPermission(context);
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(15),
+                topRight: Radius.circular(15),
               ),
-              IconButton(
-                icon: const Icon(
-                  Icons.download,
-                  color: Colors.black,
+              border: Border.all(color: Colors.black, width: 1),
+            ),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(15),
+                topRight: Radius.circular(15),
+              ),
+              child: Image.network(
+                path,
+                fit: BoxFit.cover,
+                height: 200,
+                width: double.infinity,
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(15),
+                bottomRight: Radius.circular(15),
+              ),
+              border: Border.all(color: Colors.black, width: 1),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  fileName,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-                onPressed: () {
-
-                  requestPermission(context);
-                },
-              ),
-            ],
+                IconButton(
+                  icon: const Icon(
+                    Icons.download,
+                    color: Colors.black,
+                  ),
+                  onPressed: () {
+                    requestPermission(context);
+                  },
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 20),
-      ],
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+}
+
+class ImagePreviewPage extends StatelessWidget {
+  final String imagePath;
+
+  const ImagePreviewPage({super.key, required this.imagePath});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Downloaded Image")),
+
+      body: Center(
+        child: Image.file(File(imagePath)),
+      ),
     );
   }
 }

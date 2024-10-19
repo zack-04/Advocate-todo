@@ -291,7 +291,7 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
               ),
               const SizedBox(height: 10),
               Padding(
-                padding: const EdgeInsets.only(left: 10),
+                padding: const EdgeInsets.only(left: 10, right: 10),
                 child: Row(
                   children: [
                     IconButton(
@@ -313,11 +313,7 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
                             : recordingExists
                             ? Icons.play_arrow
                             : Icons.mic,
-                        color: isRecording
-                            ? Colors.green
-                            : recordingExists
-                            ? Colors.green
-                            : Colors.green,
+                        color: isRecording || recordingExists ? Colors.green : Colors.green,
                         size: 30,
                       ),
                     ),
@@ -336,13 +332,12 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
                       ),
                     )
                         : Text(
-                      recordingExists
-                          ? 'Press play to preview'
-                          : 'Not recording',
+                      recordingExists ? 'Press play to preview' : 'Not recording',
                       style: const TextStyle(
                         fontSize: 16,
                       ),
                     ),
+                    const Spacer(), // This pushes the delete button to the right
                     if (recordingExists)
                       IconButton(
                         onPressed: _deleteRecording,
@@ -351,6 +346,7 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
                   ],
                 ),
               ),
+
               const SizedBox(height: 10),
               Padding(
                 padding: const EdgeInsets.only(right: 25),
@@ -426,7 +422,7 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
   }
 }
 
-void showVoiceNoteDialog(BuildContext context, Function refreshCallback) {
+void showVoiceNoteDialog(BuildContext context, Function refreshCallback, ) {
   showDialog(
     context: context,
     builder: (BuildContext context) {

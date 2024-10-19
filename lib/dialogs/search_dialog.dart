@@ -67,11 +67,11 @@ class _UserSearchState extends State<UserSearch> {
           // Fetch all users with both name and user_id, excluding selected ones
           allUsers = (data['data'] as List)
               .map((user) => {
-            'name': user['name'].toString(),
-            'user_id': user['user_id'].toString()
-          })
+                    'name': user['name'].toString(),
+                    'user_id': user['user_id'].toString()
+                  })
               .where((user) => !widget.selectedUsers
-              .any((selected) => selected['user_id'] == user['user_id']))
+                  .any((selected) => selected['user_id'] == user['user_id']))
               .toList();
           filteredUsers = allUsers;
         });
@@ -96,14 +96,14 @@ class _UserSearchState extends State<UserSearch> {
       if (searchTerm.isEmpty) {
         filteredUsers = allUsers
             .where((user) => !widget.selectedUsers
-            .any((selected) => selected['user_id'] == user['user_id']))
+                .any((selected) => selected['user_id'] == user['user_id']))
             .toList();
       } else {
         filteredUsers = allUsers
             .where((user) =>
-        user['name']!.toLowerCase().contains(searchTerm) &&
-            !widget.selectedUsers
-                .any((selected) => selected['user_id'] == user['user_id']))
+                user['name']!.toLowerCase().contains(searchTerm) &&
+                !widget.selectedUsers
+                    .any((selected) => selected['user_id'] == user['user_id']))
             .toList();
       }
 
@@ -126,7 +126,6 @@ class _UserSearchState extends State<UserSearch> {
     return Padding(
       padding: const EdgeInsets.only(left: 25, right: 25),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
           border: Border.all(color: Colors.grey),
           borderRadius: BorderRadius.circular(8),
@@ -145,26 +144,31 @@ class _UserSearchState extends State<UserSearch> {
                   ),
               ],
             ),
-            TextField(
-              controller: _searchController,
-              focusNode: _focusNode,
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: 'Search Users',
+            Padding(
+              padding: const EdgeInsets.only(left: 10),
+              child: TextField(
+                controller: _searchController,
+                focusNode: _focusNode,
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: 'Search Users',
+                ),
+                onTap: () async {
+                  await _getActiveUsers(); // Fetch users on tap
+                  setState(() {
+                    showUserList = true; // Show user list on tap
+                  });
+                },
               ),
-              onTap: () async {
-                await _getActiveUsers(); // Fetch users on tap
-                setState(() {
-                  showUserList = true; // Show user list on tap
-                });
-              },
             ),
             if (showUserList && filteredUsers.isNotEmpty)
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.transparent,
+                  border: Border(
+                    top: BorderSide(color: Colors.grey), // Only top border
+                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
                 ),
                 height: 150, // Limit the dropdown height
                 child: ListView.builder(
@@ -184,5 +188,3 @@ class _UserSearchState extends State<UserSearch> {
     );
   }
 }
-
-
