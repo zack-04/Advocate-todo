@@ -58,9 +58,21 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
       return;
     }
 
+    // Ensure user_ids are properly added to tag_users
+    final List<String> tagUsers = selectedUsers.map((user) => user['user_id']!).toList();
+
+    // Debug log to show selected user IDs
+    print("Selected user IDs: $tagUsers");
+
+    // Make sure tagUsers is not empty and is formatted correctly.
+    if (tagUsers.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select at least one valid user')),
+      );
+      return;
+    }
+
     const String url = ApiConstants.bulletinCreate;
-    final List<String> tagUsers =
-    selectedUsers.map((user) => user['user_id']!).toList();
     final Map<String, String> body = {
       'enc_key': encKey,
       'emp_id': loginUserId!,
@@ -69,9 +81,15 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
       'content': content,
     };
 
+    // Debug log to show the entire body being sent to API
+    print("API Request Body: $body");
+
     try {
       final response = await http.post(
         Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded', // or 'application/json'
+        },
         body: body,
       );
 
@@ -206,12 +224,18 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
                     setState(() {
                       selectedUsers.add(user);
                     });
+                    // Debug log after adding a user
+                    print("User added: ${user['user_id']}");
+                    print("Current selected users: $selectedUsers");
                   },
                   onUserRemoved: (user) {
                     setState(() {
                       selectedUsers.removeWhere(
                               (selected) => selected['user_id'] == user['user_id']);
                     });
+                    // Debug log after removing a user
+                    print("User removed: ${user['user_id']}");
+                    print("Current selected users: $selectedUsers");
                   },
                 ),
 

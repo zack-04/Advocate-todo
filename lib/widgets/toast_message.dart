@@ -11,17 +11,34 @@ void showCustomToastification({
   required Color foregroundColor,
   ToastificationStyle style = ToastificationStyle.flatColored,
   Duration autoCloseDuration = const Duration(seconds: 5),
+  Function()? onTap,
 }) {
   toastification.show(
     context: context,
     type: type,
     style: style,
     autoCloseDuration: autoCloseDuration,
-    title: Text(title),
+
+    title: GestureDetector(
+      onTap: onTap,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: foregroundColor),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(color: foregroundColor),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    ),
     alignment: Alignment.topRight,
     direction: TextDirection.ltr,
-    icon: Icon(icon),
-    showIcon: true,
+    showIcon: true, // Show the icon as defined
     primaryColor: primaryColor,
     backgroundColor: backgroundColor,
     foregroundColor: foregroundColor,

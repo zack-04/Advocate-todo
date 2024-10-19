@@ -50,6 +50,7 @@ dependencies:
   device_info_plus: ^11.0.0
   flutter_sound: ^9.16.3
 
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
