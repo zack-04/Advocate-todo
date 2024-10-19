@@ -28,6 +28,8 @@ class AssignedTab extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         child: RefreshIndicator(
           onRefresh: onRefresh,
+          color: Colors.black,
+          backgroundColor: Colors.white,
           child: toDoResponse!.data!.isEmpty
               ? _buildEmptyState()
               : Stack(

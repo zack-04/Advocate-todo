@@ -19,8 +19,6 @@ class BulletinPage extends StatefulWidget {
 }
 
 class _BulletinPageState extends State<BulletinPage> {
-
-
   List bulletinData = [];
   bool isLoading = true;
   String? loginUserId;
@@ -153,44 +151,42 @@ class _BulletinPageState extends State<BulletinPage> {
               isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : Expanded(
-                child: ListView.builder(
-                  itemCount: bulletinData.length,
-                  physics: const BouncingScrollPhysics(),
-                  itemBuilder: (context, index) {
-                    final item = bulletinData[index];
-                    final isVoiceNote = item['type'] == 'Voice';
-                    final voiceNoteUrl = item['voice_note_file'];
-                    final fileName = voiceNoteUrl
-                        ?.split('/')
-                        ?.last ?? '';
+                      child: ListView.builder(
+                        itemCount: bulletinData.length,
+                        physics: const BouncingScrollPhysics(),
+                        itemBuilder: (context, index) {
+                          final item = bulletinData[index];
+                          final isVoiceNote = item['type'] == 'Voice';
+                          final voiceNoteUrl = item['voice_note_file'];
+                          final fileName = voiceNoteUrl?.split('/')?.last ?? '';
 
-                    return CustomContainer(
-                      creatorName: item['creator_name'] ?? 'Unknown',
-                      updatedTime: item['updated_time'] ?? 'N/A',
-                      bulletinContent: isVoiceNote
-                          ? fileName
-                          : item['bulletin_content'] ?? '',
-                      bulletinType: item['type'] ?? 'Text',
-                      extraWidget: isVoiceNote && voiceNoteUrl != null
-                          ? IconButton(
-                        icon: Icon(
-                          playingVoiceNote == voiceNoteUrl
-                              ? Icons.pause
-                              : Icons.play_arrow,
-                          color: playingVoiceNote == voiceNoteUrl
-                              ? Colors.green
-                              : Colors.red,
-                          size: 30,
-                        ),
-                        onPressed: () {
-                          _togglePlayPause(voiceNoteUrl);
+                          return CustomContainer(
+                            creatorName: item['creator_name'] ?? 'Unknown',
+                            updatedTime: item['updated_time'] ?? 'N/A',
+                            bulletinContent: isVoiceNote
+                                ? fileName
+                                : item['bulletin_content'] ?? '',
+                            bulletinType: item['type'] ?? 'Text',
+                            extraWidget: isVoiceNote && voiceNoteUrl != null
+                                ? IconButton(
+                                    icon: Icon(
+                                      playingVoiceNote == voiceNoteUrl
+                                          ? Icons.pause
+                                          : Icons.play_arrow,
+                                      color: playingVoiceNote == voiceNoteUrl
+                                          ? Colors.green
+                                          : Colors.red,
+                                      size: 30,
+                                    ),
+                                    onPressed: () {
+                                      _togglePlayPause(voiceNoteUrl);
+                                    },
+                                  )
+                                : null,
+                          );
                         },
-                      )
-                          : null,
-                    );
-                  },
-                ),
-              ),
+                      ),
+                    ),
               const SizedBox(height: 120),
             ],
           ),

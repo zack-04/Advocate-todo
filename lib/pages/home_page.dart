@@ -47,7 +47,7 @@ class _HomePageState extends State<HomePage> {
                 borderRadius: BorderRadius.circular(50),
                 color: Colors.white,
               ),
-              height: 80,
+              height: 70,
               child: Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
