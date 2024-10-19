@@ -31,18 +31,13 @@ class _TodoListPageState extends State<TodoListPage> {
   int approvalCount = 0;
   List<ToDoResponse?> tabData = [];
   bool isLoading = false;
+  final PageController _pageController = PageController();
 
   @override
   void initState() {
     super.initState();
     fetchData();
   }
-
-  // @override
-  // void didChangeDependencies() {
-  //   super.didChangeDependencies();
-  //   fetchData();
-  // }
 
   void _onTabTapped(int index) async {
     if (!showCreateForm) {
@@ -125,6 +120,7 @@ class _TodoListPageState extends State<TodoListPage> {
           : SafeArea(
               child: Column(
                 children: [
+                  const SizedBox(height: 10),
                   Padding(
                     padding: const EdgeInsets.only(left: 20, right: 15),
                     child: Row(
@@ -145,7 +141,7 @@ class _TodoListPageState extends State<TodoListPage> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  _buildTabBar(),
+                  showCreateForm ? const SizedBox() : _buildTabBar(),
                   Expanded(
                     child: showCreateForm
                         ? SingleChildScrollView(
@@ -264,36 +260,39 @@ class _TodoListPageState extends State<TodoListPage> {
   }
 
   Widget _buildTabContent() {
-    if (_selectedIndex < 0 || _selectedIndex >= _tabs.length) {
-      return const Center(
-        child: Text('No tab selected.'),
-      );
-    }
-    List<Widget> tabViews = [
-      SelfTab(
-        toDoResponse: tabData[0],
-        onTransfer: () => fetchData,
-      ),
-      AssignedTab(
-        toDoResponse: tabData[1],
-        onRefresh: () => _refreshAssignedTab(),
-      ),
-      const Center(
-        child: Padding(
-          padding: EdgeInsets.only(bottom: 50),
-          child: Text(
-            'Buzz tab',
-            style: TextStyle(fontSize: 20),
+    return Expanded(
+      child: PageView(
+        controller: _pageController,
+        onPageChanged: (int index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        children: [
+          SelfTab(
+            toDoResponse: tabData[0],
+            onTransfer: () => fetchData,
+            onRefresh: () => fetchData(),
           ),
-        ),
+          AssignedTab(
+            toDoResponse: tabData[1],
+            onRefresh: () => _refreshAssignedTab(),
+          ),
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: 50),
+              child: Text(
+                'Buzz tab',
+                style: TextStyle(fontSize: 20),
+              ),
+            ),
+          ),
+          OthersTab(
+            toDoResponse: tabData[2],
+          ),
+        ],
       ),
-      OthersTab(
-        toDoResponse: tabData[2],
-        onRefresh: () => _refreshOthersTab(),
-      ),
-    ];
-
-    return tabViews[_selectedIndex];
+    );
   }
 }
 
@@ -436,160 +435,171 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
         ),
         child: Stack(
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "To Do Creation",
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  constraints: const BoxConstraints(
-                    maxHeight: 130,
-                  ),
-                  child: TextFormField(
-                    controller: controller,
-                    focusNode: focusNode,
-                    cursorColor: Colors.black,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    maxLines: null,
-                    maxLength: 250,
-                    minLines: 3,
-                    keyboardType: TextInputType.multiline,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter content';
-                      }
-                      return null;
-                    },
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: const Color(0xFFF9F9F9),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(
-                          color: Colors.grey,
-                          width: 1,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(
-                          color: Colors.grey,
-                          width: 1,
-                        ),
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(
-                          color: Colors.grey,
-                          width: 1,
-                        ),
-                      ),
+            Form(
+              key: formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "To Do Creation",
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Priority',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      isDropdownOpen = !isDropdownOpen;
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 14, horizontal: 16),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey),
-                      borderRadius: BorderRadius.circular(8),
-                      color: const Color(0xFFF6F6F6),
+                  const SizedBox(height: 10),
+                  Container(
+                    constraints: const BoxConstraints(
+                      maxHeight: 130,
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 18,
-                              height: 18,
-                              decoration: BoxDecoration(
-                                color: _getPriorityColor(selectedPriority),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 22),
-                            Text(
-                              selectedPriority,
-                              style: const TextStyle(
-                                fontSize: 18,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Icon(
-                          isDropdownOpen
-                              ? FontAwesome.chevron_up_solid
-                              : FontAwesome.chevron_down_solid,
-                          size: 18,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-                const Text(
-                  'Complete Before',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: () => _selectDate(context),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 14, horizontal: 16),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey),
-                      borderRadius: BorderRadius.circular(8),
-                      color: const Color(0xFFF6F6F6),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          DateFormat('dd-MMM-yyyy').format(selectedDate),
-                          style: const TextStyle(
-                            fontSize: 18,
+                    child: TextFormField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      cursorColor: Colors.black,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      maxLines: null,
+                      maxLength: 250,
+                      minLines: 3,
+                      keyboardType: TextInputType.multiline,
+                      onTapOutside: (event) {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter content';
+                        }
+                        return null;
+                      },
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color(0xFFF9F9F9),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(
+                            color: Colors.grey.shade200,
+                            width: 1,
                           ),
                         ),
-                        const Icon(Icons.calendar_today),
-                      ],
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(
+                            color: Colors.grey.shade200,
+                            width: 1,
+                          ),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(
+                            color: Colors.grey.shade200,
+                            width: 1,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 40),
-                CustomButton(
-                  text: 'Create List',
-                  onPressed: () async {
-                    await todoCreation();
-                  },
-                ),
-                const SizedBox(height: 100),
-              ],
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Priority',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        isDropdownOpen = !isDropdownOpen;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 14,
+                        horizontal: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade200),
+                        borderRadius: BorderRadius.circular(8),
+                        color: const Color(0xFFF6F6F6),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 18,
+                                height: 18,
+                                decoration: BoxDecoration(
+                                  color: _getPriorityColor(selectedPriority),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 22),
+                              Text(
+                                selectedPriority,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Icon(
+                            isDropdownOpen
+                                ? FontAwesome.chevron_up_solid
+                                : FontAwesome.chevron_down_solid,
+                            size: 18,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  const Text(
+                    'Complete Before',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () => _selectDate(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 14, horizontal: 16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade200),
+                        borderRadius: BorderRadius.circular(8),
+                        color: const Color(0xFFF6F6F6),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            DateFormat('dd-MMM-yyyy').format(selectedDate),
+                            style: const TextStyle(
+                              fontSize: 18,
+                            ),
+                          ),
+                          const Icon(Icons.calendar_today),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  CustomButton(
+                    text: 'Create List',
+                    onPressed: () async {
+                      if (!formKey.currentState!.validate()) {
+                        return;
+                      }
+                      await todoCreation();
+                    },
+                  ),
+                  const SizedBox(height: 100),
+                ],
+              ),
             ),
 
             // Dropdown menu overlay
