@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:advocate_todo_list/const.dart';
 import 'package:advocate_todo_list/methods/api_methods.dart';
 import 'package:advocate_todo_list/model/todo_list_model.dart';
+import 'package:advocate_todo_list/model/user_model.dart';
 import 'package:advocate_todo_list/tabs/assigned_tab.dart';
-import 'package:advocate_todo_list/tabs/buzz_tab.dart';
 import 'package:advocate_todo_list/tabs/others_tab.dart';
 import 'package:advocate_todo_list/tabs/self_tab.dart';
 import 'package:advocate_todo_list/widgets/custom_button.dart';
@@ -99,6 +99,7 @@ class _TodoListPageState extends State<TodoListPage> {
         tabData = results;
         selfCount = int.parse(results[0]!.selfCount!);
         approvalCount = int.parse(results[0]!.approvalCount!);
+        _selectedIndex = 0;
       });
     } catch (e) {
       print('An error occurred: $e');
@@ -108,8 +109,6 @@ class _TodoListPageState extends State<TodoListPage> {
       });
     }
   }
-
-  
 
   @override
   Widget build(BuildContext context) {
@@ -283,7 +282,8 @@ class _TodoListPageState extends State<TodoListPage> {
         ),
         AssignedTab(
           toDoResponse: tabData[1],
-          onRefresh: () => _refreshAssignedTab(),
+          onRefresh: () => fetchData(),
+          onTransfer: () => fetchData(),
         ),
         const Center(
           child: Padding(
@@ -321,6 +321,43 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
   bool isDropdownOpen = false;
   DateTime selectedDate = DateTime.now();
   bool isLoading = false;
+  UserDataResponse? userDataResponse;
+  String? selectedUserName;
+  String? selectedUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    getActiveUsersList();
+  }
+
+  Future<void> getActiveUsersList() async {
+    String? empId = await getLoginUserId();
+    debugPrint('empid: $empId');
+    const String url = ApiConstants.activeUserEndPoint;
+
+    final request = http.MultipartRequest('POST', Uri.parse(url))
+      ..fields['enc_key'] = encKey
+      ..fields['emp_id'] = empId!;
+
+    try {
+      final response = await request.send();
+      if (response.statusCode == 200) {
+        final responseBody = await response.stream.bytesToString();
+        final Map<String, dynamic> jsonMap = jsonDecode(responseBody);
+        debugPrint('responsebody: $responseBody');
+        if (mounted) {
+          setState(() {
+            userDataResponse = UserDataResponse.fromJson(jsonMap);
+          });
+        }
+      } else {
+        debugPrint('Failed: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Error id: $e');
+    }
+  }
 
   // Function to show date picker
   Future<void> _selectDate(BuildContext context) async {
@@ -357,6 +394,9 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
     debugPrint('Formatted date = $formattedDate');
     const String url = ApiConstants.todoCreationEndPoint;
 
+    debugPrint('Priority = $selectedPriority');
+    debugPrint('userid = $selectedUserId');
+
     try {
       setState(() {
         isLoading = true;
@@ -370,6 +410,7 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
           'todo': controller.text,
           'priority': selectedPriority,
           'due_date': formattedDate,
+          'assign_id': selectedUserId,
         },
       );
 
@@ -377,48 +418,56 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
         final Map<String, dynamic> responseBody = jsonDecode(response.body);
 
         if (responseBody['status'] == 'Success') {
-          showCustomToastification(
-            context: context,
-            type: ToastificationType.success,
-            title: 'Todo created successfully!',
-            icon: Icons.check,
-            primaryColor: Colors.green,
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.black,
-          );
+          if (mounted) {
+            showCustomToastification(
+              context: context,
+              type: ToastificationType.success,
+              title: 'Todo created successfully!',
+              icon: Icons.check,
+              primaryColor: Colors.green,
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+            );
+          }
           await widget.onPressed();
         } else {
+          if (mounted) {
+            showCustomToastification(
+              context: context,
+              type: ToastificationType.error,
+              title: responseBody['status'],
+              icon: Icons.error,
+              primaryColor: Colors.red,
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+            );
+          }
+        }
+      } else {
+        if (mounted) {
           showCustomToastification(
             context: context,
             type: ToastificationType.error,
-            title: responseBody['status'],
+            title: 'Server error! Please try again.',
             icon: Icons.error,
             primaryColor: Colors.red,
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
           );
         }
-      } else {
+      }
+    } catch (e) {
+      if (mounted) {
         showCustomToastification(
           context: context,
           type: ToastificationType.error,
-          title: 'Server error! Please try again.',
+          title: 'An error occurred! Please check your connection.',
           icon: Icons.error,
           primaryColor: Colors.red,
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
         );
       }
-    } catch (e) {
-      showCustomToastification(
-        context: context,
-        type: ToastificationType.error,
-        title: 'An error occurred! Please check your connection.',
-        icon: Icons.error,
-        primaryColor: Colors.red,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-      );
     } finally {
       if (mounted) {
         setState(() {
@@ -593,15 +642,73 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 32),
+                  const Text(
+                    'Select User',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 55,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade200),
+                      borderRadius: BorderRadius.circular(8),
+                      color: const Color(0xFFF6F6F6),
+                    ),
+                    child: DropdownButton<String>(
+                      value: selectedUserName,
+                      padding: const EdgeInsets.all(10),
+                      underline: const SizedBox(),
+                      borderRadius: BorderRadius.circular(20),
+                      hint: const Text('Select User'),
+                      icon: const Icon(
+                        FontAwesome.chevron_down_solid,
+                        size: 20,
+                      ),
+                      isExpanded: true,
+                      items: userDataResponse?.data.map((user) {
+                        return DropdownMenuItem<String>(
+                          value: user.name,
+                          child: Text(user.name),
+                          onTap: () {
+                            selectedUserId = user.userId;
+                          },
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) async {
+                        setState(() {
+                          selectedUserName = newValue;
+                        });
+                      },
+                    ),
+                  ),
                   const SizedBox(height: 40),
                   CustomButton(
                     text: 'Create List',
-                    onPressed: () async {
-                      if (!formKey.currentState!.validate()) {
-                        return;
-                      }
-                      await todoCreation();
-                    },
+                    onPressed: isLoading
+                        ? null
+                        : () async {
+                            if (!formKey.currentState!.validate()) {
+                              return;
+                            }
+                            if (selectedUserId == null) {
+                              showCustomToastification(
+                                context: context,
+                                type: ToastificationType.error,
+                                title: 'Select a user',
+                                icon: Icons.error,
+                                primaryColor: Colors.red,
+                                backgroundColor: Colors.white,
+                                foregroundColor: Colors.black,
+                              );
+                              return;
+                            }
+                            await todoCreation();
+                          },
                   ),
                   const SizedBox(height: 100),
                 ],

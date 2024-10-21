@@ -1,12 +1,17 @@
-import 'package:advocate_todo_list/dialogs/accept_or_deny_dialog.dart';
 import 'package:advocate_todo_list/dialogs/info_dialog.dart';
 import 'package:advocate_todo_list/model/todo_list_model.dart';
 import 'package:flutter/material.dart';
 
 class AssignedTab extends StatelessWidget {
-  const AssignedTab({super.key, this.toDoResponse, required this.onRefresh});
+  const AssignedTab({
+    super.key,
+    this.toDoResponse,
+    required this.onRefresh,
+    required this.onTransfer,
+  });
   final ToDoResponse? toDoResponse;
   final Future<void> Function() onRefresh;
+  final VoidCallback onTransfer;
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +55,7 @@ class AssignedTab extends StatelessWidget {
                             todoDetailsApi(
                               context,
                               data.todoId!,
-                              () {},
+                              onTransfer,
                               'AcceptDeny',
                             );
                           },

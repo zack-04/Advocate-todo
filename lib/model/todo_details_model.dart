@@ -29,6 +29,9 @@ class ToDoData {
   final String? transferPersonName;
   final String? transferPersonId;
   final String? transferApproveId;
+  final String? createdOn;
+  final String? completeBy;
+  final String? dateDiff;
 
   ToDoData({
     this.todoId,
@@ -41,6 +44,9 @@ class ToDoData {
     this.transferPersonName,
     this.transferPersonId,
     this.transferApproveId,
+    this.createdOn,
+    this.completeBy,
+    this.dateDiff,
   });
 
   factory ToDoData.fromJson(Map<String, dynamic> json) {
@@ -55,6 +61,9 @@ class ToDoData {
       transferPersonName: json['transfer_person_name'],
       transferPersonId: json['transfer_person_id'],
       transferApproveId: json['transfer_approve_id'],
+      createdOn: json['created_on'],
+      completeBy: json['complete_by'],
+      dateDiff: json['date_diff'],
     );
   }
 }

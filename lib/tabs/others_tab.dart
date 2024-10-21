@@ -1,7 +1,5 @@
 import 'dart:convert';
-
 import 'package:advocate_todo_list/const.dart';
-import 'package:advocate_todo_list/dialogs/info_dialog.dart';
 import 'package:advocate_todo_list/model/todo_list_model.dart';
 import 'package:advocate_todo_list/model/user_model.dart';
 import 'package:advocate_todo_list/widgets/toast_message.dart';

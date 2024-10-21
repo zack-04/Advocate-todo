@@ -26,6 +26,85 @@ class InfoDialog extends StatefulWidget {
 }
 
 class _InfoDialogState extends State<InfoDialog> {
+  bool isLoading = false;
+  bool isLoading1 = false;
+
+  Future<void> todoApproveStatus(String status) async {
+    if (status == 'Approved') {
+      setState(() {
+        isLoading = true;
+      });
+    } else {
+      setState(() {
+        isLoading1 = true;
+      });
+    }
+    final data = widget.toDoDetailsResponse.data;
+    String? empId = await getLoginUserId();
+    debugPrint('empid: $empId');
+    debugPrint('Transfer id: ${data.transferApproveId!}');
+    const String url = ApiConstants.todoApproveStatus;
+
+    final request = http.MultipartRequest('POST', Uri.parse(url))
+      ..fields['enc_key'] = encKey
+      ..fields['emp_id'] = empId!
+      ..fields['transfer_id'] = data.transferApproveId!
+      ..fields['status'] = status;
+
+    try {
+      if (empId != data.transferPersonId) {
+        if (mounted) {
+          if (status == 'Approved') {
+            setState(() {
+              isLoading = false;
+            });
+          } else {
+            setState(() {
+              isLoading1 = false;
+            });
+          }
+        }
+        return;
+      }
+      final response = await request.send();
+      if (response.statusCode == 200) {
+        final responseBody = await response.stream.bytesToString();
+        debugPrint('Transfer body: $responseBody');
+        if (mounted) {
+          showCustomToastification(
+            context: context,
+            type: ToastificationType.success,
+            title: status == 'Approved'
+                ? 'Accepted successfully!'
+                : 'Denied successfully!',
+            icon: Icons.check,
+            primaryColor: Colors.green,
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+          );
+          widget.onTransfer();
+          Navigator.pop(context);
+        }
+      } else {
+        debugPrint('Failed: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Error id: $e');
+    } finally {
+      if (mounted) {
+        if (status == 'Approved') {
+          setState(() {
+            isLoading = false;
+          });
+        } else {
+          setState(() {
+            isLoading1 = false;
+          });
+        }
+      }
+    }
+  }
+
   Future<void> getActiveUsersList() async {
     String? empId = await getLoginUserId();
     debugPrint('empid: $empId');
@@ -61,6 +140,7 @@ class _InfoDialogState extends State<InfoDialog> {
   @override
   Widget build(BuildContext context) {
     final data = widget.toDoDetailsResponse.data;
+    final date = data.dateDiff;
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
@@ -139,24 +219,71 @@ class _InfoDialogState extends State<InfoDialog> {
             ),
             const SizedBox(height: 20),
             _rowWidget('Created By:', data.creatorName!),
-            _rowWidget('Created On:', '02 Oct 2024'),
-            _rowWidget('Complete By:', '10 Oct 2024 (+2 days)'),
-            _rowWidget('Priority:', data.priority!),
+            _rowWidget('Created On:', data.createdOn!),
             _rowWidget(
-              'Transfer To:',
-              data.transferPersonName == null
-                  ? '-'
-                  : '${data.transferPersonName} (${data.todoStatus})',
+              'Complete By:',
+              date == null
+                  ? '${data.completeBy!} (0 days)'
+                  : '${data.completeBy!} ($date days)',
             ),
-            _rowWidget('Handled By:', data.handlingPersonName!),
+            _rowWidget('Priority:', data.priority!),
+            widget.whichButtonToShow == 'AcceptDeny'
+                ? const SizedBox()
+                : _rowWidget(
+                    'Transfer To:',
+                    data.transferPersonName == null
+                        ? '-'
+                        : '${data.transferPersonName} (${data.todoStatus})',
+                  ),
+            _rowWidget('Handling By:', data.handlingPersonName!),
             const SizedBox(height: 15),
             _buildButton(
               widget.whichButtonToShow,
               () async {
                 await getActiveUsersList();
               },
+              () async {
+                await todoApproveStatus('Approved');
+              },
+              () async {
+                await todoApproveStatus('Rejected');
+              },
               context,
-            )
+              isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                        ),
+                      ),
+                    )
+                  : Text(
+                      'Accept',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Colors.white,
+                      ),
+                    ),
+              isLoading1
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                        ),
+                      ),
+                    )
+                  : Text(
+                      'Deny',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Colors.white,
+                      ),
+                    ),
+            ),
           ],
         ),
       ),
@@ -167,17 +294,27 @@ class _InfoDialogState extends State<InfoDialog> {
 Widget _buildButton(
   String text,
   void Function()? onPressed,
+  void Function()? accept,
+  void Function()? deny,
   BuildContext context,
+  Widget acceptText,
+  Widget denyText,
 ) {
   switch (text) {
     case 'Transfer':
       return _buildTransferButton(onPressed);
     case 'AcceptDeny':
-      return _buildAcceptDenyButtons(context);
+      return _buildAcceptDenyButtons(
+        context,
+        accept,
+        deny,
+        acceptText,
+        denyText,
+      );
     case 'Nothing':
-      return const SizedBox(); // Displays nothing
+      return const SizedBox();
     default:
-      return Container(); // Fallback option
+      return Container();
   }
 }
 
@@ -210,7 +347,13 @@ Widget _buildTransferButton(void Function()? onPressed) {
   );
 }
 
-Widget _buildAcceptDenyButtons(BuildContext context) {
+Widget _buildAcceptDenyButtons(
+  BuildContext context,
+  void Function()? accept,
+  void Function()? deny,
+  Widget acceptText,
+  Widget denyText,
+) {
   return Padding(
     padding: const EdgeInsets.only(
       left: 30,
@@ -227,16 +370,8 @@ Widget _buildAcceptDenyButtons(BuildContext context) {
               borderRadius: BorderRadius.circular(5),
             ),
             color: const Color(0xFF08970B),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: Text(
-              'Accept',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: Colors.white,
-              ),
-            ),
+            onPressed: accept,
+            child: acceptText,
           ),
         ),
         const SizedBox(width: 40),
@@ -248,16 +383,8 @@ Widget _buildAcceptDenyButtons(BuildContext context) {
               borderRadius: BorderRadius.circular(5),
             ),
             color: const Color(0xFFBF0202),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: Text(
-              'Deny',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: Colors.white,
-              ),
-            ),
+            onPressed: deny,
+            child: denyText,
           ),
         ),
       ],
@@ -377,12 +504,15 @@ Widget _rowWidget(String text1, String text2) {
           ),
         ),
         const SizedBox(width: 15),
-        Text(
-          text2,
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
+        Expanded(
+          child: Text(
+            text2,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],

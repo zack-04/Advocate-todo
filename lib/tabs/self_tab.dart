@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:advocate_todo_list/const.dart';
 import 'package:advocate_todo_list/dialogs/info_dialog.dart';
 import 'package:advocate_todo_list/model/todo_list_model.dart';
 import 'package:drag_and_drop_lists/drag_and_drop_lists.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:http/http.dart' as http;
 
 class SelfTab extends StatefulWidget {
   const SelfTab({
@@ -27,6 +30,40 @@ class _SelfTabState extends State<SelfTab> {
   void initState() {
     super.initState();
     _buildLists();
+  }
+
+  Future<void> changeWorkStatus(String todoId, int newListIndex) async {
+    String? empId = await getLoginUserId();
+    debugPrint('empid: $empId');
+    String status;
+
+    if (newListIndex == 0) {
+      status = 'Work-Inprogress';
+    } else if (newListIndex == 1) {
+      status = 'Pending';
+    } else {
+      status = 'Completed';
+    }
+    const String url = ApiConstants.todoWorkStatusChange;
+
+    final request = http.MultipartRequest('POST', Uri.parse(url))
+      ..fields['enc_key'] = encKey
+      ..fields['emp_id'] = empId!
+      ..fields['todo_id'] = todoId
+      ..fields['todo_status'] = status;
+
+    try {
+      final response = await request.send();
+      if (response.statusCode == 200) {
+        final responseBody = await response.stream.bytesToString();
+        debugPrint('responsebody: $responseBody');
+        if (mounted) {}
+      } else {
+        debugPrint('Failed: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Error id: $e');
+    }
   }
 
   String _getContent(String? content) {
@@ -56,8 +93,10 @@ class _SelfTabState extends State<SelfTab> {
     // Categorize items based on their status
     for (int index = 0; index < data!.length; index++) {
       var todo = data[index];
+      // debugPrint('Index of lists = $index');
 
-      DragAndDropItem item = DragAndDropItem(
+      CustomDragAndDropItem item = CustomDragAndDropItem(
+        todoId: todo.todoId!,
         child: _buildListItem(
           _getContent(todo.content),
           index + 1,
@@ -83,7 +122,7 @@ class _SelfTabState extends State<SelfTab> {
         case 'Completed':
           categorizedItems[taskStatus['COMPLETED']!]!.add(item);
           break;
-        case 'In Progress':
+        case 'Work-Inprogress':
           categorizedItems[taskStatus['IN_PROGRESS']!]!.add(item);
           break;
       }
@@ -101,6 +140,7 @@ class _SelfTabState extends State<SelfTab> {
         ),
       );
     });
+    _recalculateNumbers();
 
     debugPrint('Pending list = ${categorizedItems[taskStatus['PENDING']!]!}');
     debugPrint(
@@ -195,7 +235,7 @@ class _SelfTabState extends State<SelfTab> {
                 fit: BoxFit.cover,
               ),
               const SizedBox(width: 10),
-              Flexible(
+              Expanded(
                 child: Container(
                   height: 40,
                   decoration: BoxDecoration(
@@ -231,7 +271,7 @@ class _SelfTabState extends State<SelfTab> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Flexible(
+                      Expanded(
                         child: Text(
                           title,
                           style: const TextStyle(
@@ -287,8 +327,13 @@ class _SelfTabState extends State<SelfTab> {
     setState(() {
       var movedItem = _lists[oldListIndex].children.removeAt(oldItemIndex);
       _lists[newListIndex].children.insert(newItemIndex, movedItem);
+
+      String todoId = (movedItem as CustomDragAndDropItem).todoId;
+      debugPrint('Dragged todoId = $todoId');
+      changeWorkStatus(todoId, newListIndex);
       _recalculateNumbers();
     });
+
     debugPrint('Olditemindex = $oldItemIndex');
     debugPrint('Oldlistindex = $oldListIndex');
     debugPrint('newitemindex = $newItemIndex');
@@ -299,6 +344,8 @@ class _SelfTabState extends State<SelfTab> {
     for (var list in _lists) {
       for (int i = 0; i < list.children.length; i++) {
         var dragAndDropItem = list.children[i];
+        var custom = dragAndDropItem as CustomDragAndDropItem;
+        String todoId = (custom).todoId;
         if (dragAndDropItem.child is Material) {
           var material = list.children[i].child as Material;
           var inkWell = material.child as InkWell;
@@ -324,7 +371,8 @@ class _SelfTabState extends State<SelfTab> {
             color = Colors.grey;
           }
 
-          list.children[i] = DragAndDropItem(
+          list.children[i] = CustomDragAndDropItem(
+            todoId: todoId,
             child: _buildListItem(title, i + 1, color, onTap),
           );
         } else {
@@ -334,4 +382,13 @@ class _SelfTabState extends State<SelfTab> {
       }
     }
   }
+}
+
+class CustomDragAndDropItem extends DragAndDropItem {
+  final String todoId;
+
+  CustomDragAndDropItem({
+    required super.child,
+    required this.todoId,
+  });
 }

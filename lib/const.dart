@@ -14,6 +14,8 @@ class ApiConstants {
   static const String bulletinList = '${baseUrl}bulletin/Bulletin-List';
   static const String bulletinCreate = '${baseUrl}bulletin/Bulletin-Creation';
   static const String allUsers = '${baseUrl}User/Active-User-List';
+  static const String todoApproveStatus = '${baseUrl}Todo/Todo-Approval-Status';
+  static const String todoWorkStatusChange = '${baseUrl}Todo/Todo-Work-Status';
 }
 
 Future<String?> getLoginUserId() async {
