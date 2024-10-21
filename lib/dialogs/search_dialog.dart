@@ -1,6 +1,4 @@
 import 'dart:convert';
-
-import 'package:advocate_todo_list/dialogs/text_note_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -34,7 +32,7 @@ class _UserSearchState extends State<UserSearch> {
   void initState() {
     super.initState();
     _searchController.addListener(_filterUsers);
-    _getActiveUsers(); // Fetch active users on init
+    _getActiveUsers();
   }
 
   @override
@@ -64,14 +62,13 @@ class _UserSearchState extends State<UserSearch> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
-          // Fetch all users with both name and user_id, excluding selected ones
           allUsers = (data['data'] as List)
               .map((user) => {
-                    'name': user['name'].toString(),
-                    'user_id': user['user_id'].toString()
-                  })
+            'name': user['name'].toString(),
+            'user_id': user['user_id'].toString()
+          })
               .where((user) => !widget.selectedUsers
-                  .any((selected) => selected['user_id'] == user['user_id']))
+              .any((selected) => selected['user_id'] == user['user_id']))
               .toList();
           filteredUsers = allUsers;
         });
@@ -92,22 +89,21 @@ class _UserSearchState extends State<UserSearch> {
     setState(() {
       String searchTerm = _searchController.text.toLowerCase();
 
-      // Filter the users based on the search term and exclude already selected users
       if (searchTerm.isEmpty) {
         filteredUsers = allUsers
             .where((user) => !widget.selectedUsers
-                .any((selected) => selected['user_id'] == user['user_id']))
+            .any((selected) => selected['user_id'] == user['user_id']))
             .toList();
       } else {
         filteredUsers = allUsers
             .where((user) =>
-                user['name']!.toLowerCase().contains(searchTerm) &&
-                !widget.selectedUsers
-                    .any((selected) => selected['user_id'] == user['user_id']))
+        user['name']!.toLowerCase().contains(searchTerm) &&
+            !widget.selectedUsers
+                .any((selected) => selected['user_id'] == user['user_id']))
             .toList();
       }
 
-      showUserList = true; // Show user list dropdown when filtering
+      showUserList = true;
     });
   }
 
@@ -118,59 +114,107 @@ class _UserSearchState extends State<UserSearch> {
       _searchController.clear();
       filteredUsers.clear();
       showUserList = false;
+      _focusNode.requestFocus();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 25, right: 25),
+      padding: const EdgeInsets.symmetric(horizontal: 25),
       child: Container(
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey),
+          color: const Color(0xFFF9F9F9),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
           children: [
-            Wrap(
-              spacing: 8.0,
-              runSpacing: 4.0,
-              children: [
-                for (Map<String, String> user in widget.selectedUsers)
-                  Chip(
-                    backgroundColor: Colors.grey.shade300,
-                    label: Text(user['name']!),
-                    onDeleted: () => widget.onUserRemoved(user),
-                  ),
-              ],
-            ),
             Padding(
-              padding: const EdgeInsets.only(left: 10),
-              child: TextField(
-                controller: _searchController,
-                focusNode: _focusNode,
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  hintText: 'Search Users',
-                ),
-                onTap: () async {
-                  await _getActiveUsers(); // Fetch users on tap
-                  setState(() {
-                    showUserList = true; // Show user list on tap
-                  });
-                },
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Wrap(
+                      spacing: 8.0,
+                      runSpacing: 4.0,
+                      alignment: WrapAlignment.start,
+                      children: [
+                        for (Map<String, String> user in widget.selectedUsers)
+                          Container(
+                            height: 36, // Ensure uniform height with TextField
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(5),
+                              color: const Color(0xFFCACACA),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  user['name']!,
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 14.0,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                GestureDetector(
+                                  onTap: () => widget.onUserRemoved(user),
+                                  child: const Icon(
+                                    Icons.close,
+                                    size: 16,
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        SizedBox(
+                          height: 36, // Match the height of the tagged boxes
+                          width: 150,
+                          child: TextField(
+                            controller: _searchController,
+                            focusNode: _focusNode,
+                            style: const TextStyle(
+                              fontSize: 14.0,
+                              height: 1.5, // Adjust line height
+                            ),
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              contentPadding:
+                              const EdgeInsets.symmetric(vertical: 15),
+                              hintText: widget.selectedUsers.isEmpty
+                                  ? 'Search Users'
+                                  : null,
+                            ),
+                            onTap: () async {
+                              await _getActiveUsers();
+                              setState(() {
+                                showUserList = true;
+                              });
+                            },
+                            textAlignVertical: TextAlignVertical.center,
+                            cursorColor: Colors.black,
+                            autofocus: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
             if (showUserList && filteredUsers.isNotEmpty)
               Container(
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
+                decoration: const BoxDecoration(
                   border: Border(
-                    top: BorderSide(color: Colors.grey), // Only top border
+                    top: BorderSide(color: Colors.grey),
                   ),
                   borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
                 ),
-                height: 150, // Limit the dropdown height
+                height: 150,
                 child: ListView.builder(
                   itemCount: filteredUsers.length,
                   itemBuilder: (context, index) {

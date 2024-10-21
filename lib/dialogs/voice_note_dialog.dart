@@ -87,8 +87,17 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
   Future<void> _createVoiceBulletin() async {
     if (loginUserId == null || recordingPath == null) {
       debugPrint('Error: User not logged in or no recording found.');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('User not logged in or no recording found!')),
+      showCustomToastification(
+        context: context,
+        type: ToastificationType.error,
+        title: 'Please Record Audio',
+        icon: Icons.error,
+        primaryColor: Colors.red,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        onTap: () {
+          // Optional: Navigate to a specific page or handle onTap event
+        },
       );
       return;
     }
@@ -96,6 +105,22 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
     final List<String> tagUsers =
     selectedUsers.map((user) => user['user_id']!).toList();
     debugPrint('Tagged users: $tagUsers');
+
+    if (tagUsers.isEmpty) {
+      showCustomToastification(
+        context: context,
+        type: ToastificationType.error,
+        title: 'Tag Users Required',
+        icon: Icons.warning,
+        primaryColor: Colors.red,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        onTap: () {
+          // Optional: Navigate to a specific page or handle onTap event
+        },
+      );
+      return;
+    }
 
     final Uri uri = Uri.parse(ApiConstants.bulletinCreate);
     var request = http.MultipartRequest('POST', uri);
@@ -154,6 +179,17 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
     _timer?.cancel();
   }
 
+  void _startPlaybackTimer() {
+    debugPrint('Starting playback timer...');
+    recordingDuration = 0;
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        recordingDuration++;
+      });
+      debugPrint('Playback duration: ${_formatDuration(recordingDuration)}');
+    });
+  }
+
   String _formatDuration(int seconds) {
     final int minutes = seconds ~/ 60;
     final int remainingSeconds = seconds % 60;
@@ -166,6 +202,7 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
         isPlaying = true;
       });
       debugPrint('Playing recording...');
+      _startPlaybackTimer(); // Start the playback timer
       await _audioPlayer!.startPlayer(
         fromURI: recordingPath,
         codec: Codec.pcm16WAV,
@@ -173,6 +210,7 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
           setState(() {
             isPlaying = false;
           });
+          _stopRecordingTimer(); // Stop the timer when playback finishes
           debugPrint('Playback finished.');
         },
       );
@@ -313,7 +351,9 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
                             : recordingExists
                             ? Icons.play_arrow
                             : Icons.mic,
-                        color: isRecording || recordingExists ? Colors.green : Colors.green,
+                        color: isRecording || recordingExists
+                            ? Colors.green
+                            : Colors.green,
                         size: 30,
                       ),
                     ),
@@ -332,7 +372,9 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
                       ),
                     )
                         : Text(
-                      recordingExists ? 'Press play to preview' : 'Not recording',
+                      recordingExists
+                          ? 'Press play to preview'
+                          : 'Not recording',
                       style: const TextStyle(
                         fontSize: 16,
                       ),
@@ -346,7 +388,6 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 10),
               Padding(
                 padding: const EdgeInsets.only(right: 25),
@@ -400,10 +441,20 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
                       borderRadius: BorderRadius.circular(5),
                     ),
                     color: const Color(0xFF4B4B4B),
-                    onPressed: () {
-                      debugPrint('Send button pressed. Sending voice note...');
+                    onPressed: () async {
+                      debugPrint('Send button pressed. Checking if recording is active...');
+
+                      // Check if recording is active and stop it
+                      if (isRecording) {
+                        debugPrint('Recording is active, stopping recording...');
+                        await _stopRecording();  // Stop the recording before sending
+                      }
+
+                      // Now proceed with sending the voice note
+                      debugPrint('Sending voice note...');
                       _createVoiceBulletin();
                     },
+
                     child: Text(
                       'Send',
                       style: GoogleFonts.inter(
@@ -421,6 +472,7 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
     );
   }
 }
+
 
 void showVoiceNoteDialog(BuildContext context, Function refreshCallback, ) {
   showDialog(

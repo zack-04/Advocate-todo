@@ -50,6 +50,7 @@ dependencies:
   shared_preferences: ^2.3.2
   device_info_plus: ^11.0.0
   flutter_sound: ^9.16.3
+  open_filex: ^4.5.0
 
 
 dev_dependencies:
