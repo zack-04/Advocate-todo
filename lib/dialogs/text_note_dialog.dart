@@ -6,6 +6,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:toastification/toastification.dart';
+
+import '../widgets/toast_message.dart';
+
 class TextNoteDialog extends StatefulWidget {
   final Function refreshCallback;
 
@@ -45,32 +49,44 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
 
     final String content = controller.text;
     if (content.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter note content')),
-      );
-      return;
-    }
-
-    if (selectedUsers.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select at least one user to tag')),
+      showCustomToastification(
+        context: context,
+        type: ToastificationType.error,
+        title: 'Note Required',
+        icon: Icons.error,
+        primaryColor: Colors.red,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        onTap: () {
+          // Optional: Navigate to a specific page or handle onTap event
+        },
       );
       return;
     }
 
     // Ensure user_ids are properly added to tag_users
-    final List<String> tagUsers = selectedUsers.map((user) => user['user_id']!).toList();
+    final List<String> tagUsers =
+    selectedUsers.map((user) => user['user_id']!).toList();
 
-    // Debug log to show selected user IDs
-    print("Selected user IDs: $tagUsers");
-
-    // Make sure tagUsers is not empty and is formatted correctly.
+    // Check if any users are tagged
     if (tagUsers.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select at least one valid user')),
+      showCustomToastification(
+        context: context,
+        type: ToastificationType.error,
+        title: 'Tag Users Required',
+        icon: Icons.warning,
+        primaryColor: Colors.red,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        onTap: () {
+          // Optional: Navigate to a specific page or handle onTap event
+        },
       );
       return;
     }
+
+    // Debug log to show selected user IDs
+    print("Selected user IDs: $tagUsers");
 
     const String url = ApiConstants.bulletinCreate;
     final Map<String, String> body = {
@@ -117,6 +133,7 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
       );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -217,7 +234,6 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
                   ),
                 ),
                 const SizedBox(height: 10),
-
                 UserSearch(
                   selectedUsers: selectedUsers,
                   onUserSelected: (user) {
@@ -231,14 +247,13 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
                   onUserRemoved: (user) {
                     setState(() {
                       selectedUsers.removeWhere(
-                              (selected) => selected['user_id'] == user['user_id']);
+                          (selected) => selected['user_id'] == user['user_id']);
                     });
                     // Debug log after removing a user
                     print("User removed: ${user['user_id']}");
                     print("Current selected users: $selectedUsers");
                   },
                 ),
-
                 const SizedBox(height: 15),
                 Padding(
                   padding: const EdgeInsets.only(

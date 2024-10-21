@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:advocate_todo_list/const.dart';
@@ -12,6 +13,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart';
+
+import '../widgets/visual_component.dart';
 
 class BulletinPage extends StatefulWidget {
   const BulletinPage({super.key});
@@ -28,12 +31,29 @@ class _BulletinPageState extends State<BulletinPage> {
   String? playingVoiceNote;
   final ScrollController _scrollController = ScrollController();
 
+  // Variables for animation during playback
+  Timer? _animationTimer;
+  int playbackDuration = 0;
+  List<Color> colors = [
+    Colors.blueAccent,
+    Colors.greenAccent,
+    Colors.redAccent,
+    Colors.yellowAccent
+  ];
+  List<int> duration = [900, 800, 700, 600, 500];
+
   @override
   void initState() {
     super.initState();
     _getLoginUserIdAndFetchData();
     _audioPlayer = FlutterSoundPlayer();
     _audioPlayer!.openPlayer();
+  }
+
+  String _formatDuration(int seconds) {
+    final minutes = (seconds ~/ 60).toString().padLeft(2, '0');
+    final remainingSeconds = (seconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$remainingSeconds';
   }
 
   Future<void> _getLoginUserIdAndFetchData() async {
@@ -110,6 +130,7 @@ class _BulletinPageState extends State<BulletinPage> {
 
     if (playingVoiceNote == voiceNoteUrl) {
       await _audioPlayer!.stopPlayer();
+      _stopAnimation(); // Stop the animation when playback is paused/stopped
       setState(() {
         playingVoiceNote = null;
       });
@@ -136,11 +157,30 @@ class _BulletinPageState extends State<BulletinPage> {
           setState(() {
             playingVoiceNote = null;
           });
+          _stopAnimation(); // Stop the animation when playback finishes
         },
       );
+      _startAnimation(); // Start the animation when playback starts
     } catch (e) {
       print('Error playing audio: $e');
     }
+  }
+
+  void _startAnimation() {
+    playbackDuration = 0;
+
+    _animationTimer =
+        Timer.periodic(const Duration(milliseconds: 1000), (timer) {
+      setState(() {
+        playbackDuration++;
+      });
+    });
+  }
+
+  void _stopAnimation() {
+    _animationTimer?.cancel();
+
+    playbackDuration = 0;
   }
 
   Future<String> _getLocalFilePath(String fileName) async {
@@ -199,6 +239,7 @@ class _BulletinPageState extends State<BulletinPage> {
   void dispose() {
     _audioPlayer?.closePlayer();
     _scrollController.dispose();
+    _animationTimer?.cancel(); // Dispose the timer when disposing the widget
     super.dispose();
   }
 
@@ -257,6 +298,8 @@ class _BulletinPageState extends State<BulletinPage> {
                   : Expanded(
                       child: RefreshIndicator(
                         onRefresh: _handleRefresh,
+                        color: Colors.black,
+                        backgroundColor: Colors.white,
                         // In the ListView.builder inside BulletinPage
                         child: ListView.builder(
                           controller: _scrollController,
@@ -273,32 +316,60 @@ class _BulletinPageState extends State<BulletinPage> {
                             final List<String> taggedUsers =
                                 item['users'] != null
                                     ? List<String>.from(item['users'])
-                                    : []; // Ensure it's a list of strings
+                                    : [];
 
                             return CustomContainer(
                               creatorName: item['creator_name'] ?? 'Unknown',
                               updatedTime: item['updated_time'] ?? 'N/A',
-                              bulletinContent: isVoiceNote
-                                  ? 'Voice Note'
-                                  : item['bulletin_content'] ?? '',
+                              bulletinContent: isVoiceNote ? '' : item['bulletin_content'] ?? '',
                               bulletinType: item['type'] ?? 'Text',
-                              taggedUsers: taggedUsers, // Pass the tagged users
+                              taggedUsers: taggedUsers,
                               extraWidget: isVoiceNote && voiceNoteUrl != null
-                                  ? IconButton(
-                                      icon: Icon(
-                                        playingVoiceNote == voiceNoteUrl
-                                            ? Icons.pause
-                                            : Icons.play_arrow,
-                                        color: playingVoiceNote == voiceNoteUrl
-                                            ? Colors.green
-                                            : Colors.red,
-                                        size: 30,
+                                  ? Row(
+                                children: [
+                                  IconButton(
+                                    icon: Icon(
+                                      playingVoiceNote == voiceNoteUrl
+                                          ? Icons.pause
+                                          : Icons.play_arrow,
+                                      color: playingVoiceNote == voiceNoteUrl
+                                          ? Colors.green
+                                          : Colors.red,
+                                      size: 30,
+                                    ),
+                                    onPressed: () {
+                                      _togglePlayPause(voiceNoteUrl, fileName!);
+                                    },
+                                  ),
+                                  if (playingVoiceNote == voiceNoteUrl)
+                                    Expanded(
+                                      child: Container(
+                                        height: 30, // Control the height of the animation
+                                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(8), // Optional: rounded corners
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: List.generate(20, (index) {
+                                              return Flexible(
+                                                child: VisualComponent(
+                                                  duration: duration[index % duration.length],
+                                                  color: colors[index % colors.length],
+                                                ),
+                                              );
+                                            }),
+                                          ),
+                                        ),
                                       ),
-                                      onPressed: () {
-                                        _togglePlayPause(
-                                            voiceNoteUrl, fileName!);
-                                      },
-                                    )
+                                    ),
+                                  const SizedBox(width: 10), // Spacing between animation and timer
+                                  if (playingVoiceNote == voiceNoteUrl)
+                                    Text(
+                                      _formatDuration(playbackDuration),
+                                      style: const TextStyle(fontSize: 16),
+                                    ),
+                                ],
+                              )
                                   : null,
                             );
                           },

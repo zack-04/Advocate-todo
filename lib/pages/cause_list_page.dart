@@ -284,18 +284,29 @@ class ImageContainer extends StatelessWidget {
 
       if (response.statusCode == 200) {
         const String imagePath = '/storage/emulated/0/AdvocateTodo/Images/';
-
         final folder = Directory(imagePath);
         if (!await folder.exists()) {
           await folder.create(recursive: true);
         }
 
         String fileExtension = url.split('.').last;
-        String completeFileName = '$fileName.$fileExtension';
-        final file = File('$imagePath$completeFileName');
+        String baseName = fileName; // Use 'baseName' to avoid shadowing issues.
+        int counter = 1;
+        File file;
 
+        // Generate unique filename if it already exists.
+        do {
+          String uniqueFileName = counter == 1
+              ? '$baseName.$fileExtension'
+              : '${baseName}_$counter.$fileExtension';
+          file = File('$imagePath$uniqueFileName');
+          counter++;
+        } while (await file.exists());
+
+        // Save the file.
         await file.writeAsBytes(response.bodyBytes);
 
+        // Show success toast and notification.
         showCustomToastification(
           context: context,
           type: ToastificationType.success,
@@ -305,7 +316,6 @@ class ImageContainer extends StatelessWidget {
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
           onTap: () {
-            // Navigate to ImagePreviewPage when the toast is clicked
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -315,7 +325,7 @@ class ImageContainer extends StatelessWidget {
           },
         );
 
-        _showDownloadNotification(completeFileName, file.path);
+        _showDownloadNotification(baseName, file.path); // Pass the image path.
       } else {
         print("Failed to download image. Status code: ${response.statusCode}");
       }
@@ -324,28 +334,41 @@ class ImageContainer extends StatelessWidget {
     }
   }
 
+
   void _showDownloadNotification(String title, String imagePath) async {
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-      'download_channel', // Channel ID
-      'Image Downloads', // Channel name
-      channelDescription: 'Notifications for image downloads',
-      importance: Importance.low,
-      priority: Priority.low,
-      ticker: 'ticker',
+    final BigPictureStyleInformation bigPictureStyleInformation =
+    BigPictureStyleInformation(
+      FilePathAndroidBitmap(imagePath), // Use image as notification content.
+      contentTitle: 'Image Downloaded',
+      summaryText: title,
+      largeIcon: FilePathAndroidBitmap(imagePath), // Optional large icon.
     );
 
-    const NotificationDetails notificationDetails =
-        NotificationDetails(android: androidDetails);
+    final AndroidNotificationDetails androidDetails =
+    AndroidNotificationDetails(
+      'download_channel', // Channel ID.
+      'Image Downloads', // Channel name.
+      channelDescription: 'Notifications for image downloads',
+      importance: Importance.low, // Ensure the notification is visible.
+      priority: Priority.low,
+      styleInformation: bigPictureStyleInformation, // Use BigPicture style.
+    );
+
+    final NotificationDetails notificationDetails =
+    NotificationDetails(android: androidDetails);
+
+    // Generate a unique notification ID based on current timestamp.
+    int notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
 
     await flutterLocalNotificationsPlugin.show(
-      0, // Notification ID
+      notificationId, // Use the unique notification ID.
       'Image Downloaded',
       title,
       notificationDetails,
-      payload: imagePath, // Pass the file path as payload
+      payload: imagePath, // Pass the file path as payload.
     );
   }
+
 
   Future<void> requestPermission(BuildContext context) async {
     PermissionStatus status;
