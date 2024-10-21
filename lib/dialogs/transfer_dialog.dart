@@ -67,8 +67,8 @@ class _TransferDialogState extends State<TransferDialog> {
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
           );
-          Navigator.pop(context);
           widget.onTransfer();
+          Navigator.pop(context);
         }
       } else {
         debugPrint('Failed: ${response.statusCode}');
@@ -259,7 +259,7 @@ void showTransferDialog(
       return TransferDialog(
         userDataResponse: userDataResponse,
         todoId: todoId,
-        onTransfer: () => onTransfer,
+        onTransfer: () => onTransfer(),
       );
     },
   );

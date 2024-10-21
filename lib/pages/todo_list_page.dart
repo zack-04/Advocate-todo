@@ -109,6 +109,8 @@ class _TodoListPageState extends State<TodoListPage> {
     }
   }
 
+  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -189,7 +191,12 @@ class _TodoListPageState extends State<TodoListPage> {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: List.generate(_tabs.length, (index) {
             return GestureDetector(
-              onTap: () => _onTabTapped(index),
+              onTap: () {
+                _onTabTapped(index);
+                _pageController.jumpToPage(
+                  index,
+                );
+              },
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 7),
                 child: Container(
@@ -215,6 +222,7 @@ class _TodoListPageState extends State<TodoListPage> {
                           fontWeight: _selectedIndex == index
                               ? FontWeight.bold
                               : FontWeight.normal,
+                          fontSize: 13,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -260,38 +268,36 @@ class _TodoListPageState extends State<TodoListPage> {
   }
 
   Widget _buildTabContent() {
-    return Expanded(
-      child: PageView(
-        controller: _pageController,
-        onPageChanged: (int index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        children: [
-          SelfTab(
-            toDoResponse: tabData[0],
-            onTransfer: () => fetchData,
-            onRefresh: () => fetchData(),
-          ),
-          AssignedTab(
-            toDoResponse: tabData[1],
-            onRefresh: () => _refreshAssignedTab(),
-          ),
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: 50),
-              child: Text(
-                'Buzz tab',
-                style: TextStyle(fontSize: 20),
-              ),
+    return PageView(
+      controller: _pageController,
+      onPageChanged: (int index) {
+        setState(() {
+          _selectedIndex = index;
+        });
+      },
+      children: [
+        SelfTab(
+          toDoResponse: tabData[0],
+          onTransfer: () => fetchData(),
+          onRefresh: () => fetchData(),
+        ),
+        AssignedTab(
+          toDoResponse: tabData[1],
+          onRefresh: () => _refreshAssignedTab(),
+        ),
+        const Center(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: 50),
+            child: Text(
+              'Buzz tab',
+              style: TextStyle(fontSize: 20),
             ),
           ),
-          OthersTab(
-            toDoResponse: tabData[2],
-          ),
-        ],
-      ),
+        ),
+        OthersTab(
+          toDoResponse: tabData[2],
+        ),
+      ],
     );
   }
 }

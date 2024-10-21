@@ -1,4 +1,5 @@
 import 'package:advocate_todo_list/dialogs/accept_or_deny_dialog.dart';
+import 'package:advocate_todo_list/dialogs/info_dialog.dart';
 import 'package:advocate_todo_list/model/todo_list_model.dart';
 import 'package:flutter/material.dart';
 
@@ -45,6 +46,14 @@ class AssignedTab extends StatelessWidget {
                           index + 1,
                           getPriorityColor(data.priority!),
                           context,
+                          () {
+                            todoDetailsApi(
+                              context,
+                              data.todoId!,
+                              () {},
+                              'AcceptDeny',
+                            );
+                          },
                         );
                       },
                     ),
@@ -73,53 +82,69 @@ Widget _buildEmptyState() {
   );
 }
 
-Widget _listItem(String title, int number, Color color, BuildContext context) {
-  return GestureDetector(
-    onTap: () {
-      showAcceptOrDenyDialog(context);
-    },
-    child: Padding(
-      padding: const EdgeInsets.symmetric(
-        vertical: 10,
-        horizontal: 4,
-      ),
-      child: Container(
-        height: 40,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x40000000),
-              offset: Offset(0, 4),
-              blurRadius: 4,
-            ),
-          ],
+Widget _listItem(
+  String title,
+  int number,
+  Color color,
+  BuildContext context,
+  void Function()? onTap,
+) {
+  return Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          vertical: 10,
+          horizontal: 4,
         ),
-        child: Row(
-          children: [
-            Container(
-              width: 10,
-              height: 40,
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(10),
-                  bottomLeft: Radius.circular(10),
+        child: Container(
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x40000000),
+                offset: Offset(0, 4),
+                blurRadius: 4,
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 10,
+                height: 40,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(10),
+                    bottomLeft: Radius.circular(10),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              '$number.',
-              style: const TextStyle(
-                color: Colors.black,
+              const SizedBox(width: 12),
+              Text(
+                '$number.',
+                style: const TextStyle(
+                  color: Colors.black,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Text(title),
-          ],
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     ),

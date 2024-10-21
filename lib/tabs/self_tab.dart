@@ -69,6 +69,7 @@ class _SelfTabState extends State<SelfTab> {
               context,
               todo.todoId!,
               widget.onTransfer,
+              'Transfer',
             );
           },
         ),
@@ -162,7 +163,8 @@ class _SelfTabState extends State<SelfTab> {
           title,
           style: const TextStyle(
             color: Colors.white,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w500,
+            fontSize: 13,
           ),
         ),
       ),
@@ -193,7 +195,7 @@ class _SelfTabState extends State<SelfTab> {
                 fit: BoxFit.cover,
               ),
               const SizedBox(width: 10),
-              Expanded(
+              Flexible(
                 child: Container(
                   height: 40,
                   decoration: BoxDecoration(
@@ -229,8 +231,15 @@ class _SelfTabState extends State<SelfTab> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(title),
+                      Flexible(
+                        child: Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
@@ -280,6 +289,10 @@ class _SelfTabState extends State<SelfTab> {
       _lists[newListIndex].children.insert(newItemIndex, movedItem);
       _recalculateNumbers();
     });
+    debugPrint('Olditemindex = $oldItemIndex');
+    debugPrint('Oldlistindex = $oldListIndex');
+    debugPrint('newitemindex = $newItemIndex');
+    debugPrint('newListindex = $newListIndex');
   }
 
   void _recalculateNumbers() {

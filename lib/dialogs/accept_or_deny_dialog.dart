@@ -9,15 +9,6 @@ class AcceptOrDenyDialog extends StatefulWidget {
 }
 
 class _AcceptOrDenyDialogState extends State<AcceptOrDenyDialog> {
-  String? selectedPerson;
-  final List<String> persons = [
-    'Sarath Kumar',
-    'Suresh',
-    'Mahesh',
-    'Sudharshan',
-    'Maheshwari'
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Dialog(

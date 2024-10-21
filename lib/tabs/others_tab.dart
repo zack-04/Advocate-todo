@@ -257,7 +257,14 @@ Widget _listItem(String title, int number, Color color, BuildContext context) {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(title),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),

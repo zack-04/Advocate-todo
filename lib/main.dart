@@ -12,7 +12,7 @@ import 'package:advocate_todo_list/dialogs/info_dialog.dart';
 import 'package:advocate_todo_list/pages/login_page.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-FlutterLocalNotificationsPlugin();
+    FlutterLocalNotificationsPlugin();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,16 +23,15 @@ void main() async {
 
   await requestExactAlarmsPermission();
 
-
   // Initialize timezone package
   tz.initializeTimeZones();
   tz.setLocalLocation(tz.getLocation('Asia/Kolkata'));
 
   // Android initialization settings for notifications
   const AndroidInitializationSettings initializationSettingsAndroid =
-  AndroidInitializationSettings('@mipmap/ic_launcher');
+      AndroidInitializationSettings('@mipmap/ic_launcher');
   final NotificationAppLaunchDetails? notificationAppLaunchDetails =
-  await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
+      await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
 
   String? payload;
   if (notificationAppLaunchDetails?.didNotificationLaunchApp ?? false) {
@@ -56,6 +55,7 @@ void main() async {
           MyApp.navigatorKey.currentContext!,
           response.payload!,
           () {},
+          'Nothing',
         );
         debugPrint('Notification clicked : ${response.payload}');
       }
@@ -82,6 +82,7 @@ void backgroundNotificationHandler(NotificationResponse response) {
       MyApp.navigatorKey.currentContext!,
       response.payload!,
       () {},
+      'Nothing',
     );
   }
 }
@@ -89,8 +90,8 @@ void backgroundNotificationHandler(NotificationResponse response) {
 // Function to request exact alarm permission on Android 13+
 Future<void> requestExactAlarmsPermission() async {
   final AndroidFlutterLocalNotificationsPlugin? androidPlugin =
-  flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
-      AndroidFlutterLocalNotificationsPlugin>();
+      flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
 
   if (androidPlugin != null) {
     await androidPlugin.requestExactAlarmsPermission();
@@ -163,5 +164,6 @@ void _onNotificationClick(BuildContext context, String payload) {
     context,
     payload,
     () {},
+    'Nothing',
   );
 }

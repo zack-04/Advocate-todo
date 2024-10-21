@@ -15,9 +15,11 @@ class InfoDialog extends StatefulWidget {
     super.key,
     required this.toDoDetailsResponse,
     required this.onTransfer,
+    required this.whichButtonToShow,
   });
   final ToDoDetailsResponse toDoDetailsResponse;
   final VoidCallback onTransfer;
+  final String whichButtonToShow;
 
   @override
   State<InfoDialog> createState() => _InfoDialogState();
@@ -88,31 +90,37 @@ class _InfoDialogState extends State<InfoDialog> {
                     ),
                   ),
                   const Spacer(),
-                  GestureDetector(
-                    onTap: () async {
-                      debugPrint('Todo id = ${data.todoId!}');
-                      await scheduleNotification(context, data.todoId!);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      child: const Icon(
-                        Icons.alarm,
-                        size: 20,
-                        color: Color(0xFF545454),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () async {
+                        debugPrint('Todo id = ${data.todoId!}');
+                        await scheduleNotification(context, data.todoId!);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(15),
+                        child: const Icon(
+                          Icons.alarm,
+                          size: 20,
+                          color: Color(0xFF545454),
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 5),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                    child: const Padding(
-                      padding: EdgeInsets.all(10),
-                      child: Icon(
-                        Icons.close,
-                        size: 25,
-                        color: Color(0xFF545454),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
+                      child: const Padding(
+                        padding: EdgeInsets.all(15),
+                        child: Icon(
+                          Icons.close,
+                          size: 25,
+                          color: Color(0xFF545454),
+                        ),
                       ),
                     ),
                   ),
@@ -125,6 +133,8 @@ class _InfoDialogState extends State<InfoDialog> {
               child: Text(
                 data.content!,
                 style: const TextStyle(fontSize: 14),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 3,
               ),
             ),
             const SizedBox(height: 20),
@@ -135,44 +145,124 @@ class _InfoDialogState extends State<InfoDialog> {
             _rowWidget(
               'Transfer To:',
               data.transferPersonName == null
-                  ? ''
+                  ? '-'
                   : '${data.transferPersonName} (${data.todoStatus})',
             ),
             _rowWidget('Handled By:', data.handlingPersonName!),
             const SizedBox(height: 15),
-            Padding(
-              padding: const EdgeInsets.only(
-                left: 20,
-                right: 10,
-                top: 20,
-              ),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: MaterialButton(
-                  height: 42,
-                  minWidth: 130,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  color: const Color(0xFF4B4B4B),
-                  onPressed: () async {
-                    await getActiveUsersList();
-                  },
-                  child: Text(
-                    'Transfer',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            _buildButton(
+              widget.whichButtonToShow,
+              () async {
+                await getActiveUsersList();
+              },
+              context,
+            )
           ],
         ),
       ),
     );
   }
+}
+
+Widget _buildButton(
+  String text,
+  void Function()? onPressed,
+  BuildContext context,
+) {
+  switch (text) {
+    case 'Transfer':
+      return _buildTransferButton(onPressed);
+    case 'AcceptDeny':
+      return _buildAcceptDenyButtons(context);
+    case 'Nothing':
+      return const SizedBox(); // Displays nothing
+    default:
+      return Container(); // Fallback option
+  }
+}
+
+Widget _buildTransferButton(void Function()? onPressed) {
+  return Padding(
+    padding: const EdgeInsets.only(
+      left: 20,
+      right: 10,
+      top: 20,
+    ),
+    child: Align(
+      alignment: Alignment.centerRight,
+      child: MaterialButton(
+        height: 42,
+        minWidth: 130,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(5),
+        ),
+        color: const Color(0xFF4B4B4B),
+        onPressed: onPressed,
+        child: Text(
+          'Transfer',
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _buildAcceptDenyButtons(BuildContext context) {
+  return Padding(
+    padding: const EdgeInsets.only(
+      left: 30,
+      right: 10,
+      top: 20,
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: MaterialButton(
+            height: 42,
+            minWidth: 130,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(5),
+            ),
+            color: const Color(0xFF08970B),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: Text(
+              'Accept',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 40),
+        Expanded(
+          child: MaterialButton(
+            height: 42,
+            minWidth: 130,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(5),
+            ),
+            color: const Color(0xFFBF0202),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: Text(
+              'Deny',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 void showLoaderDialog(BuildContext context) {
@@ -197,6 +287,7 @@ Future<void> todoDetailsApi(
   BuildContext context,
   String todoId,
   VoidCallback onTransfer,
+  String whichButtonToShow,
 ) async {
   String? empId = await getLoginUserId();
   debugPrint('Id = $empId');
@@ -227,7 +318,8 @@ Future<void> todoDetailsApi(
           builder: (BuildContext context) {
             return InfoDialog(
               toDoDetailsResponse: todoDetailsResponse,
-              onTransfer: () => onTransfer,
+              onTransfer: onTransfer,
+              whichButtonToShow: whichButtonToShow,
             );
           },
         );
