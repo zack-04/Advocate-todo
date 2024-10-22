@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:advocate_todo_list/dialogs/search_dialog.dart';
+import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:http/http.dart' as http;
@@ -35,6 +36,9 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
   Timer? _timer;
   int recordingDuration = 0;
   String? loginUserId;
+  late RecorderController recorderController;
+  late PlayerController playerController;
+
   List<Color> colors = [
     Colors.blueAccent,
     Colors.greenAccent,
@@ -51,6 +55,7 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
     _getLoginUserId();
     _initializeRecorder();
     _initializePlayer();
+    _initializeWaveformController(); // Initialize waveform controller
   }
 
   Future<void> _initializeRecorder() async {
@@ -74,12 +79,26 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
     debugPrint('Login user ID: $loginUserId');
   }
 
+  void _initializeWaveformController() {
+    recorderController = RecorderController()
+      ..androidEncoder = AndroidEncoder.aac
+      ..androidOutputFormat = AndroidOutputFormat.mpeg4
+      ..iosEncoder = IosEncoder.kAudioFormatMPEG4AAC
+      ..sampleRate = 44100;
+    playerController = PlayerController();
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
     _timer?.cancel();
+    if (isPlaying) {
+      playerController.stopPlayer(); // Stop any playing audio
+    }
     _audioRecorder?.closeRecorder();
     _audioPlayer?.closePlayer();
+    recorderController.dispose();
+    playerController.dispose();
     debugPrint('Disposing resources...');
     super.dispose();
   }
@@ -103,7 +122,7 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
     }
 
     final List<String> tagUsers =
-    selectedUsers.map((user) => user['user_id']!).toList();
+        selectedUsers.map((user) => user['user_id']!).toList();
     debugPrint('Tagged users: $tagUsers');
 
     if (tagUsers.isEmpty) {
@@ -133,7 +152,7 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
     if (recordingPath != null) {
       debugPrint('Attaching recorded file: $recordingPath');
       var file =
-      await http.MultipartFile.fromPath('voice_note', recordingPath!);
+          await http.MultipartFile.fromPath('voice_note', recordingPath!);
       request.files.add(file);
     }
 
@@ -197,23 +216,29 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
   }
 
   Future<void> _playRecording() async {
-    if (recordingPath != null && !isPlaying) {
+    if (recordingPath == null) return;
+
+    try {
+      await playerController.preparePlayer(path: recordingPath!);
       setState(() {
-        isPlaying = true;
+        isPlaying = true; // Set the state to playing
       });
-      debugPrint('Playing recording...');
-      _startPlaybackTimer(); // Start the playback timer
-      await _audioPlayer!.startPlayer(
-        fromURI: recordingPath,
-        codec: Codec.pcm16WAV,
-        whenFinished: () {
-          setState(() {
-            isPlaying = false;
-          });
-          _stopRecordingTimer(); // Stop the timer when playback finishes
-          debugPrint('Playback finished.');
-        },
-      );
+      _startPlaybackTimer();
+      await playerController.startPlayer();
+
+      playerController.onCompletion.listen((_) {
+        setState(() {
+          isPlaying = false; // Stop playing when complete
+        });
+        // Reset the player for replaying
+        playerController.stopPlayer(); // Ensure player is stopped
+      });
+    } catch (e) {
+      debugPrint('Failed to play recording: $e');
+      setState(() {
+        isPlaying = false; // Ensure state is reset in case of an error
+      });
+      _stopRecordingTimer();
     }
   }
 
@@ -228,34 +253,25 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
   Future<void> _startRecording() async {
     if (_audioRecorder == null) return;
 
-    if (await _audioRecorder!.isRecording) {
-      debugPrint('Already recording.');
-      return;
-    }
-
     final Directory? appDocumentDir = await getExternalStorageDirectory();
     final String filePath = path.join(
       appDocumentDir!.path,
       'recording_${DateTime.now().millisecondsSinceEpoch}.wav',
     );
-    debugPrint('Recording path: $filePath');
 
     try {
       await _audioRecorder!.startRecorder(
         toFile: filePath,
         codec: Codec.pcm16WAV,
       );
+      await recorderController.record();
       _startRecordingTimer();
       setState(() {
         isRecording = true;
         recordingPath = null;
       });
-      debugPrint('Recording started.');
     } catch (e) {
       debugPrint('Failed to start recording: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to start recording: $e')),
-      );
     }
   }
 
@@ -266,6 +282,7 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
       String? filePath = await _audioRecorder!.stopRecorder();
       debugPrint('Recording stopped, file saved at: $filePath');
       _stopRecordingTimer();
+      await recorderController.stop();
       setState(() {
         isRecording = false;
         recordingExists = true;
@@ -315,7 +332,6 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
                     ),
                     GestureDetector(
                       onTap: () {
-                        debugPrint('Closing dialog.');
                         Navigator.pop(context);
                       },
                       child: const Icon(
@@ -335,54 +351,84 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
                     IconButton(
                       onPressed: () async {
                         if (isRecording) {
-                          debugPrint('Stopping recording...');
                           await _stopRecording();
+                        } else if (isPlaying) {
+                          await playerController
+                              .stopPlayer(); // Stop the player if it is playing
+                          setState(() {
+                            isPlaying =
+                                false; // Update the state to reflect that playback has stopped
+                          });
                         } else if (recordingExists) {
-                          debugPrint('Playing recording...');
-                          await _playRecording();
+                          await _playRecording(); // Start playback if a recording exists
                         } else {
-                          debugPrint('Starting new recording...');
-                          await _startRecording();
+                          await _startRecording(); // Start recording if nothing else is happening
                         }
                       },
                       icon: Icon(
                         isRecording
                             ? Icons.stop
                             : recordingExists
-                            ? Icons.play_arrow
-                            : Icons.mic,
-                        color: isRecording || recordingExists
-                            ? Colors.green
-                            : Colors.green,
+                                ? (isPlaying
+                                    ? Icons.pause
+                                    : Icons
+                                        .play_arrow) // Change icon based on state
+                                : Icons.mic,
+                        color: Colors.green,
                         size: 30,
                       ),
                     ),
+
                     const SizedBox(width: 10),
-                    isRecording || isPlaying
-                        ? Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: List.generate(
-                        20,
-                            (index) {
-                          return VisualComponent(
-                            duration: duration[index % 5],
-                            color: colors[index % 4],
-                          );
-                        },
-                      ),
-                    )
-                        : Text(
-                      recordingExists
-                          ? 'Press play to preview'
-                          : 'Not recording',
-                      style: const TextStyle(
-                        fontSize: 16,
-                      ),
+
+                    // Audio waveforms display
+                    Expanded(
+                      child: isRecording
+                          ? AudioWaveforms(
+                              enableGesture: true,
+                              size: Size(
+                                  MediaQuery.of(context).size.width / 2, 50),
+                              recorderController: recorderController,
+                              waveStyle: const WaveStyle(
+                                waveColor: Color(0xFF545454),
+                                extendWaveform: true,
+                                showMiddleLine: false,
+                              ),
+                              padding: const EdgeInsets.only(left: 18),
+                              margin:
+                                  const EdgeInsets.symmetric(horizontal: 15),
+                            )
+                          : isPlaying
+                              ? AudioFileWaveforms(
+                                  size: Size(
+                                      MediaQuery.of(context).size.width * 0.6,
+                                      40),
+                                  playerController: playerController,
+                                  waveformType: WaveformType.fitWidth,
+                                  playerWaveStyle: const PlayerWaveStyle(
+                                    fixedWaveColor: Color(0xFF545454),
+                                    liveWaveColor: Color(0xFF545454),
+                                  ),
+                                )
+                              : Text(
+                                  recordingExists
+                                      ? 'Press play to preview'
+                                      : 'Not recording',
+                                  style: const TextStyle(fontSize: 16),
+                                ),
                     ),
-                    const Spacer(), // This pushes the delete button to the right
+
+                    const SizedBox(width: 10),
+
+                    // Delete button
                     if (recordingExists)
                       IconButton(
-                        onPressed: _deleteRecording,
+                        onPressed: () {
+                          setState(() {
+                            recordingExists = false;
+                            recordingPath = null;
+                          });
+                        },
                         icon: const Icon(Icons.delete, color: Colors.red),
                       ),
                   ],
@@ -395,9 +441,7 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
                   alignment: Alignment.centerRight,
                   child: Text(
                     _formatDuration(recordingDuration),
-                    style: const TextStyle(
-                      fontSize: 16,
-                    ),
+                    style: const TextStyle(fontSize: 16),
                   ),
                 ),
               ),
@@ -406,26 +450,21 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
                 padding: EdgeInsets.only(left: 25),
                 child: Text(
                   'Tag Users',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                 ),
               ),
               const SizedBox(height: 10),
               UserSearch(
                 selectedUsers: selectedUsers,
                 onUserSelected: (user) {
-                  debugPrint('User selected: ${user['user_id']}');
                   setState(() {
                     selectedUsers.add(user);
                   });
                 },
                 onUserRemoved: (user) {
-                  debugPrint('User removed: ${user['user_id']}');
                   setState(() {
                     selectedUsers.removeWhere(
-                            (selected) => selected['user_id'] == user['user_id']);
+                        (selected) => selected['user_id'] == user['user_id']);
                   });
                 },
               ),
@@ -442,19 +481,11 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
                     ),
                     color: const Color(0xFF4B4B4B),
                     onPressed: () async {
-                      debugPrint('Send button pressed. Checking if recording is active...');
-
-                      // Check if recording is active and stop it
                       if (isRecording) {
-                        debugPrint('Recording is active, stopping recording...');
-                        await _stopRecording();  // Stop the recording before sending
+                        await _stopRecording();
                       }
-
-                      // Now proceed with sending the voice note
-                      debugPrint('Sending voice note...');
                       _createVoiceBulletin();
                     },
-
                     child: Text(
                       'Send',
                       style: GoogleFonts.inter(
@@ -473,8 +504,10 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
   }
 }
 
-
-void showVoiceNoteDialog(BuildContext context, Function refreshCallback, ) {
+void showVoiceNoteDialog(
+  BuildContext context,
+  Function refreshCallback,
+) {
   showDialog(
     context: context,
     builder: (BuildContext context) {
