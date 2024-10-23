@@ -27,7 +27,7 @@ Future<ToDoResponse?> fetchTodoList(String tabType, String empId) async {
     debugPrint('response = $response');
     if (response.statusCode == 200) {
       final responseBody = await response.stream.bytesToString();
-
+      debugPrint('body = $responseBody');
       final data = jsonDecode(responseBody);
       toDoResponse = ToDoResponse.fromJson(data);
     } else {

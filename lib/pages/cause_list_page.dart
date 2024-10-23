@@ -334,10 +334,9 @@ class ImageContainer extends StatelessWidget {
     }
   }
 
-
   void _showDownloadNotification(String title, String imagePath) async {
     final BigPictureStyleInformation bigPictureStyleInformation =
-    BigPictureStyleInformation(
+        BigPictureStyleInformation(
       FilePathAndroidBitmap(imagePath), // Use image as notification content.
       contentTitle: 'Image Downloaded',
       summaryText: title,
@@ -345,7 +344,7 @@ class ImageContainer extends StatelessWidget {
     );
 
     final AndroidNotificationDetails androidDetails =
-    AndroidNotificationDetails(
+        AndroidNotificationDetails(
       'download_channel', // Channel ID.
       'Image Downloads', // Channel name.
       channelDescription: 'Notifications for image downloads',
@@ -355,10 +354,11 @@ class ImageContainer extends StatelessWidget {
     );
 
     final NotificationDetails notificationDetails =
-    NotificationDetails(android: androidDetails);
+        NotificationDetails(android: androidDetails);
 
     // Generate a unique notification ID based on current timestamp.
-    int notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
+    int notificationId =
+        DateTime.now().millisecondsSinceEpoch.remainder(100000);
 
     await flutterLocalNotificationsPlugin.show(
       notificationId, // Use the unique notification ID.
@@ -368,7 +368,6 @@ class ImageContainer extends StatelessWidget {
       payload: imagePath, // Pass the file path as payload.
     );
   }
-
 
   Future<void> requestPermission(BuildContext context) async {
     PermissionStatus status;
@@ -403,7 +402,7 @@ class ImageContainer extends StatelessWidget {
       } else {
         print('Storage permission denied');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content:
                 Text('Storage permission is required to download the image.'),
           ),
@@ -494,7 +493,6 @@ class ImagePreviewPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Downloaded Image")),
-
       body: Center(
         child: Image.file(File(imagePath)),
       ),
