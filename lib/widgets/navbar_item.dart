@@ -16,19 +16,21 @@ class NavbarItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final h = MediaQuery.of(context).size.height;
+    final w = MediaQuery.of(context).size.width;
     return Padding(
       padding: const EdgeInsets.only(
-        left: 5,
-        right: 5,
-        top: 5,
-        bottom: 5,
+        left: 2,
+        right: 2,
+        top: 2,
+        bottom: 2,
       ),
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          width: 80,
-          height: 65,
-          padding: const EdgeInsets.all(15),
+          width: h*0.07,
+          height: h*0.07,
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(50),
             color: bgColor,

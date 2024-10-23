@@ -2,6 +2,7 @@ import 'package:advocate_todo_list/methods/methods.dart';
 import 'package:advocate_todo_list/pages/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:open_filex/open_filex.dart';
 
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -43,26 +44,47 @@ void main() async {
     android: initializationSettingsAndroid,
   );
 
+  void openImage(String imagePath) async {
+    final result = await OpenFilex.open(imagePath);
+    debugPrint('Open file result: $result');
+  }
+
+  bool isImagePath(String path) {
+    return path.endsWith('.png') || path.endsWith('.jpg') || path.endsWith('.jpeg') || path.endsWith('.gif');
+  }
+
   await flutterLocalNotificationsPlugin.initialize(
     initializationSettings,
     onDidReceiveNotificationResponse: (response) async {
       if (response.payload != null) {
-        MyApp.navigatorKey.currentState?.push(
-          MaterialPageRoute(
-            builder: (context) => const HomePage(),
-          ),
-        );
-        todoDetailsApi(
-          MyApp.navigatorKey.currentContext!,
-          response.payload!,
-          () {},
-          'Nothing',
-        );
-        debugPrint('Notification clicked : ${response.payload}');
+        String payload = response.payload!;
+        if (isImagePath(payload)) {
+          openImage(payload);
+          debugPrint('Notification clicked: Image opened from payload: $payload');
+        } else {
+          MyApp.navigatorKey.currentState?.push(
+            MaterialPageRoute(
+              builder: (context) => const HomePage(),
+            ),
+          );
+          todoDetailsApi(
+            MyApp.navigatorKey.currentContext!,
+            payload,
+                () {},
+            'Nothing',
+          );
+          debugPrint('Notification clicked: Navigated to HomePage with payload: $payload');
+        }
       }
     },
     onDidReceiveBackgroundNotificationResponse: backgroundNotificationHandler,
   );
+
+
+
+
+
+
   await createNotificationChannel();
 
   runApp(MyApp(

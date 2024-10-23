@@ -7,6 +7,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
+import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:convert';
@@ -107,57 +108,10 @@ class _CaseListPageState extends State<CaseListPage> {
     }
   }
 
-  late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
-
   @override
   void initState() {
     super.initState();
     _getLoginUserIdAndFetchData();
-    _initializeNotifications();
-  }
-
-  void _initializeNotifications() {
-    flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-
-    const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher'); // App icon
-
-    const InitializationSettings initSettings =
-        InitializationSettings(android: androidSettings);
-
-    flutterLocalNotificationsPlugin.initialize(
-      initSettings,
-      onDidReceiveNotificationResponse: _onNotificationResponse,
-    );
-
-    _createNotificationChannel(); // Create the notification channel
-  }
-
-  void _createNotificationChannel() async {
-    const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'download_channel', // Channel ID
-      'Image Downloads', // Channel Name
-      description: 'Notifications for image downloads', // Channel Description
-      importance: Importance.low, // Set to low or default to avoid heads-up
-    );
-
-    await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
-  }
-
-  void _onNotificationResponse(NotificationResponse response) async {
-    final String? payload = response.payload;
-    if (payload != null) {
-      print('Notification payload: $payload');
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ImagePreviewPage(imagePath: payload),
-        ),
-      );
-    }
   }
 
   Future<void> _getLoginUserIdAndFetchData() async {
@@ -232,10 +186,11 @@ class _CaseListPageState extends State<CaseListPage> {
                       child: causeList.isEmpty
                           ? const Center(
                               child: Text(
-                              "No Cause List",
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w500, fontSize: 24),
-                            ))
+                                "No Cause List",
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w500, fontSize: 24),
+                              ),
+                            )
                           : SingleChildScrollView(
                               physics: const BouncingScrollPhysics(),
                               child: Column(
@@ -290,11 +245,9 @@ class ImageContainer extends StatelessWidget {
         }
 
         String fileExtension = url.split('.').last;
-        String baseName = fileName; // Use 'baseName' to avoid shadowing issues.
+        String baseName = fileName;
         int counter = 1;
         File file;
-
-        // Generate unique filename if it already exists.
         do {
           String uniqueFileName = counter == 1
               ? '$baseName.$fileExtension'
@@ -303,7 +256,6 @@ class ImageContainer extends StatelessWidget {
           counter++;
         } while (await file.exists());
 
-        // Save the file.
         await file.writeAsBytes(response.bodyBytes);
 
         // Show success toast and notification.
@@ -315,17 +267,12 @@ class ImageContainer extends StatelessWidget {
           primaryColor: Colors.green,
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ImagePreviewPage(imagePath: file.path),
-              ),
-            );
+          onTap: () async {
+            await OpenFilex.open(file.path);
           },
         );
 
-        _showDownloadNotification(baseName, file.path); // Pass the image path.
+        _showDownloadNotification(baseName, file.path);
       } else {
         print("Failed to download image. Status code: ${response.statusCode}");
       }
@@ -340,7 +287,7 @@ class ImageContainer extends StatelessWidget {
       FilePathAndroidBitmap(imagePath), // Use image as notification content.
       contentTitle: 'Image Downloaded',
       summaryText: title,
-      largeIcon: FilePathAndroidBitmap(imagePath), // Optional large icon.
+      largeIcon: FilePathAndroidBitmap(imagePath),
     );
 
     final AndroidNotificationDetails androidDetails =
@@ -361,11 +308,11 @@ class ImageContainer extends StatelessWidget {
         DateTime.now().millisecondsSinceEpoch.remainder(100000);
 
     await flutterLocalNotificationsPlugin.show(
-      notificationId, // Use the unique notification ID.
+      notificationId,
       'Image Downloaded',
       title,
       notificationDetails,
-      payload: imagePath, // Pass the file path as payload.
+      payload: imagePath,
     );
   }
 
@@ -374,33 +321,22 @@ class ImageContainer extends StatelessWidget {
 
     if (Platform.isAndroid && await _isAtLeastAndroid11()) {
       status = await Permission.manageExternalStorage.status;
-      print("Requesting Manage External Storage permission for Android 11+");
     } else {
       status = await Permission.storage.status;
-      print("Requesting Storage permission for older Android versions");
     }
 
-    print("Current Permission Status: $status");
-
     if (status.isGranted) {
-      print("Permission already granted");
       downloadImage(downloadUrl, fileName, context);
     } else {
-      print("Requesting Permission");
-
       if (Platform.isAndroid && await _isAtLeastAndroid11()) {
         status = await Permission.manageExternalStorage.request();
-        print("Manage External Storage Permission Request Result: $status");
       } else {
         status = await Permission.storage.request();
-        print("Storage Permission Request Result: $status");
       }
 
       if (status.isGranted) {
-        print("Permission granted after request");
         downloadImage(downloadUrl, fileName, context);
       } else {
-        print('Storage permission denied');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content:

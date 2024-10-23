@@ -21,6 +21,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final h = MediaQuery.of(context).size.height;
+    final w = MediaQuery.of(context).size.width;
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: Colors.white,
@@ -36,8 +38,8 @@ class _HomePageState extends State<HomePage> {
           ),
           Positioned(
             bottom: 25,
-            left: 30,
-            right: 30,
+            left: w * 0.2,
+            right: w * 0.2,
             child: Container(
               decoration: BoxDecoration(
                 border: Border.all(
@@ -47,7 +49,7 @@ class _HomePageState extends State<HomePage> {
                 borderRadius: BorderRadius.circular(50),
                 color: Colors.white,
               ),
-              height: 70,
+              height: h * 0.065,
               child: Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
