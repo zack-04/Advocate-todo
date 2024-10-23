@@ -51,7 +51,6 @@ dependencies:
   device_info_plus: ^11.0.0
   flutter_sound: ^9.16.3
   open_filex: ^4.5.0
-  audio_waveforms: ^1.1.0
 
 dev_dependencies:
   flutter_test:
@@ -78,7 +77,6 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
-    - assets/sound/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

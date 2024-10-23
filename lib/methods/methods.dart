@@ -10,13 +10,12 @@ import 'package:toastification/toastification.dart';
 
 Future<void> createNotificationChannel() async {
   const AndroidNotificationChannel channel = AndroidNotificationChannel(
-    'task_reminder_with_alarm',
-    'Task Reminder with alarm',
+    'task_reminder_with_alarm_sound',
+    'Task Reminder with alarm sound',
     description: 'This channel is used for important notifications.',
     importance: Importance.max,
-    playSound: true,
     sound: RawResourceAndroidNotificationSound('beep_sound'),
-    enableVibration: false,
+    audioAttributesUsage: AudioAttributesUsage.alarm,
   );
 
   await flutterLocalNotificationsPlugin
@@ -33,8 +32,8 @@ Future<void> showNotification({
 }) async {
   AndroidNotificationDetails androidPlatformChannelSpecifics =
       AndroidNotificationDetails(
-    'task_reminder_with_alarm',
-    'Task Reminder with alarm',
+    'task_reminder_with_alarm_sound',
+    'Task Reminder with alarm sound',
     importance: Importance.max,
     priority: Priority.high,
     sound: const RawResourceAndroidNotificationSound('beep_sound'),
@@ -42,6 +41,8 @@ Future<void> showNotification({
     ongoing: true,
     enableVibration: false,
     additionalFlags: Int32List.fromList(<int>[4]),
+    audioAttributesUsage: AudioAttributesUsage.alarm,
+    category: AndroidNotificationCategory.alarm,
   );
   NotificationDetails platformChannelSpecifics = NotificationDetails(
     android: androidPlatformChannelSpecifics,

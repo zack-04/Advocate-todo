@@ -18,7 +18,7 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Permission.notification.request();
-  // await Permission.ignoreBatteryOptimizations.request();
+  await Permission.ignoreBatteryOptimizations.request();
 
   // Request audio recording permission
   await Permission.microphone.request();
@@ -50,7 +50,10 @@ void main() async {
   }
 
   bool isImagePath(String path) {
-    return path.endsWith('.png') || path.endsWith('.jpg') || path.endsWith('.jpeg') || path.endsWith('.gif');
+    return path.endsWith('.png') ||
+        path.endsWith('.jpg') ||
+        path.endsWith('.jpeg') ||
+        path.endsWith('.gif');
   }
 
   await flutterLocalNotificationsPlugin.initialize(
@@ -60,7 +63,8 @@ void main() async {
         String payload = response.payload!;
         if (isImagePath(payload)) {
           openImage(payload);
-          debugPrint('Notification clicked: Image opened from payload: $payload');
+          debugPrint(
+              'Notification clicked: Image opened from payload: $payload');
         } else {
           MyApp.navigatorKey.currentState?.push(
             MaterialPageRoute(
@@ -70,20 +74,16 @@ void main() async {
           todoDetailsApi(
             MyApp.navigatorKey.currentContext!,
             payload,
-                () {},
+            () {},
             'Nothing',
           );
-          debugPrint('Notification clicked: Navigated to HomePage with payload: $payload');
+          debugPrint(
+              'Notification clicked: Navigated to HomePage with payload: $payload');
         }
       }
     },
     onDidReceiveBackgroundNotificationResponse: backgroundNotificationHandler,
   );
-
-
-
-
-
 
   await createNotificationChannel();
 
