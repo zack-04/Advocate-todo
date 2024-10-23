@@ -388,6 +388,9 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
   }
 
   Future<void> todoCreation() async {
+    setState(() {
+      isLoading = true;
+    });
     String? empId = await getLoginUserId();
     debugPrint('Id = $empId');
     String formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate);
@@ -398,10 +401,6 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
     debugPrint('userid = $selectedUserId');
 
     try {
-      setState(() {
-        isLoading = true;
-      });
-
       final response = await http.post(
         Uri.parse(url),
         body: {
@@ -414,41 +413,29 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
         },
       );
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseBody = jsonDecode(response.body);
+      final Map<String, dynamic> responseBody = jsonDecode(response.body);
+      debugPrint('Body = $responseBody');
+      debugPrint('status = ${responseBody['status']}');
 
-        if (responseBody['status'] == 'Success') {
-          if (mounted) {
-            showCustomToastification(
-              context: context,
-              type: ToastificationType.success,
-              title: 'Todo created successfully!',
-              icon: Icons.check,
-              primaryColor: Colors.green,
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
-            );
-          }
-          await widget.onPressed();
-        } else {
-          if (mounted) {
-            showCustomToastification(
-              context: context,
-              type: ToastificationType.error,
-              title: responseBody['status'],
-              icon: Icons.error,
-              primaryColor: Colors.red,
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
-            );
-          }
+      if (responseBody['status'] == 'Success') {
+        if (mounted) {
+          showCustomToastification(
+            context: context,
+            type: ToastificationType.success,
+            title: 'Todo created successfully!',
+            icon: Icons.check,
+            primaryColor: Colors.green,
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+          );
         }
+        await widget.onPressed();
       } else {
         if (mounted) {
           showCustomToastification(
             context: context,
             type: ToastificationType.error,
-            title: 'Server error! Please try again.',
+            title: responseBody['status'],
             icon: Icons.error,
             primaryColor: Colors.red,
             backgroundColor: Colors.white,
@@ -468,6 +455,7 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
           foregroundColor: Colors.black,
         );
       }
+      debugPrint('Error: $e');
     } finally {
       if (mounted) {
         setState(() {

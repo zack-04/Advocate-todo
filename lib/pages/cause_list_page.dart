@@ -284,7 +284,7 @@ class ImageContainer extends StatelessWidget {
   void _showDownloadNotification(String title, String imagePath) async {
     final BigPictureStyleInformation bigPictureStyleInformation =
         BigPictureStyleInformation(
-      FilePathAndroidBitmap(imagePath),
+      FilePathAndroidBitmap(imagePath), // Use image as notification content.
       contentTitle: 'Image Downloaded',
       summaryText: title,
       largeIcon: FilePathAndroidBitmap(imagePath),
@@ -292,8 +292,8 @@ class ImageContainer extends StatelessWidget {
 
     final AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
-      'download_channel',
-      'Image Downloads',
+      'download_channel', // Channel ID.
+      'Image Downloads', // Channel name.
       channelDescription: 'Notifications for image downloads',
       importance: Importance.low, // Ensure the notification is visible.
       priority: Priority.low,
@@ -302,6 +302,8 @@ class ImageContainer extends StatelessWidget {
 
     final NotificationDetails notificationDetails =
         NotificationDetails(android: androidDetails);
+
+    // Generate a unique notification ID based on current timestamp.
     int notificationId =
         DateTime.now().millisecondsSinceEpoch.remainder(100000);
 
@@ -413,6 +415,22 @@ class ImageContainer extends StatelessWidget {
           ),
           const SizedBox(height: 20),
         ],
+      ),
+    );
+  }
+}
+
+class ImagePreviewPage extends StatelessWidget {
+  final String imagePath;
+
+  const ImagePreviewPage({super.key, required this.imagePath});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Downloaded Image")),
+      body: Center(
+        child: Image.file(File(imagePath)),
       ),
     );
   }

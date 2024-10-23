@@ -1,17 +1,22 @@
+import 'dart:async';
+import 'dart:typed_data';
+
 import 'package:advocate_todo_list/main.dart';
 import 'package:advocate_todo_list/widgets/toast_message.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:toastification/toastification.dart';
 
 Future<void> createNotificationChannel() async {
   const AndroidNotificationChannel channel = AndroidNotificationChannel(
-    'task_reminder',
-    'Task Reminder',
+    'task_reminder_with_alarm',
+    'Task Reminder with alarm',
     description: 'This channel is used for important notifications.',
     importance: Importance.max,
+    playSound: true,
+    sound: RawResourceAndroidNotificationSound('beep_sound'),
+    enableVibration: false,
   );
 
   await flutterLocalNotificationsPlugin
@@ -27,21 +32,21 @@ Future<void> showNotification({
   required String todoId,
 }) async {
   AndroidNotificationDetails androidPlatformChannelSpecifics =
-      const AndroidNotificationDetails(
-    'task_reminder',
-    'Task reminder',
+      AndroidNotificationDetails(
+    'task_reminder_with_alarm',
+    'Task Reminder with alarm',
     importance: Importance.max,
     priority: Priority.high,
+    sound: const RawResourceAndroidNotificationSound('beep_sound'),
+    playSound: true,
+    ongoing: true,
+    enableVibration: false,
+    additionalFlags: Int32List.fromList(<int>[4]),
   );
-  NotificationDetails platformChannelSpecifics =
-      NotificationDetails(android: androidPlatformChannelSpecifics);
-  // await flutterLocalNotificationsPlugin.show(
-  //   0,
-  //   title,
-  //   body,
-  //   platformChannelSpecifics,
-  //   payload: 'item x',
-  // );
+  NotificationDetails platformChannelSpecifics = NotificationDetails(
+    android: androidPlatformChannelSpecifics,
+  );
+
   await flutterLocalNotificationsPlugin.zonedSchedule(
     0,
     title,
@@ -131,5 +136,4 @@ Future<void> _setNotification(
     time: scheduledDateTime,
     todoId: todoId,
   );
-  HapticFeedback.vibrate();
 }
