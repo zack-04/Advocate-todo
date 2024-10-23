@@ -16,7 +16,8 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Permission.notification.request(); // Request notification permission
+  await Permission.notification.request();
+  // await Permission.ignoreBatteryOptimizations.request();
 
   // Request audio recording permission
   await Permission.microphone.request();
@@ -44,7 +45,7 @@ void main() async {
 
   await flutterLocalNotificationsPlugin.initialize(
     initializationSettings,
-    onDidReceiveNotificationResponse: (response) {
+    onDidReceiveNotificationResponse: (response) async {
       if (response.payload != null) {
         MyApp.navigatorKey.currentState?.push(
           MaterialPageRoute(
@@ -70,7 +71,7 @@ void main() async {
 }
 
 @pragma('vm:entry-point')
-void backgroundNotificationHandler(NotificationResponse response) {
+void backgroundNotificationHandler(NotificationResponse response) async {
   if (response.payload != null) {
     debugPrint('Notification clicked in the background : ${response.payload}');
     MyApp.navigatorKey.currentState?.push(
@@ -152,7 +153,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-void _onNotificationClick(BuildContext context, String payload) {
+void _onNotificationClick(BuildContext context, String payload) async {
   debugPrint('Notification clicked from out : $payload');
   Navigator.push(
     context,
