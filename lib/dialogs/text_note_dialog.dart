@@ -157,10 +157,10 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        "Enter note",
+                        "Create Bulletin",
                         style: TextStyle(
                           fontSize: 16,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       GestureDetector(
