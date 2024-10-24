@@ -6,6 +6,7 @@ import 'package:advocate_todo_list/model/todo_details_model.dart';
 import 'package:advocate_todo_list/model/user_model.dart';
 import 'package:advocate_todo_list/widgets/toast_message.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:toastification/toastification.dart';
@@ -28,6 +29,26 @@ class InfoDialog extends StatefulWidget {
 class _InfoDialogState extends State<InfoDialog> {
   bool isLoading = false;
   bool isLoading1 = false;
+  String? userRole;
+  String? empId;
+  DateTime? lastBuzzTime;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserRole();
+  }
+
+  Future<void> _loadUserRole() async {
+    String? role = await getLoginUserRole();
+    String? empId1 = await getLoginUserId();
+    setState(() {
+      userRole = role;
+      empId = empId1!;
+    });
+    debugPrint('Role = $role');
+    debugPrint('Empid = $empId1');
+  }
 
   Future<void> todoApproveStatus(String status) async {
     if (status == 'Approved') {
@@ -105,14 +126,15 @@ class _InfoDialogState extends State<InfoDialog> {
     }
   }
 
-  Future<void> getActiveUsersList() async {
+  Future<void> getActiveUsersList(String buttonTextName) async {
     String? empId = await getLoginUserId();
     debugPrint('empid: $empId');
-    const String url = ApiConstants.activeUserEndPoint;
+    const String url = ApiConstants.allotingUserList;
 
     final request = http.MultipartRequest('POST', Uri.parse(url))
       ..fields['enc_key'] = encKey
-      ..fields['emp_id'] = empId!;
+      ..fields['emp_id'] = empId!
+      ..fields['todo_id'] = widget.toDoDetailsResponse.data.todoId!;
 
     try {
       final response = await request.send();
@@ -121,12 +143,68 @@ class _InfoDialogState extends State<InfoDialog> {
         final Map<String, dynamic> jsonMap = jsonDecode(responseBody);
         debugPrint('responsebody: $responseBody');
         if (mounted) {
-          Navigator.pop(context);
+          userRole != 'Admin' ? Navigator.pop(context) : null;
           showTransferDialog(
             context,
             UserDataResponse.fromJson(jsonMap),
             widget.toDoDetailsResponse.data.todoId!,
             widget.onTransfer,
+            buttonTextName,
+          );
+        }
+      } else {
+        debugPrint('Failed: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Error id: $e');
+    }
+  }
+
+  Future<void> todoBuzzApi() async {
+    if (lastBuzzTime != null) {
+      final int remainingSeconds =
+          30 - DateTime.now().difference(lastBuzzTime!).inSeconds;
+      debugPrint('Sec: $remainingSeconds');
+
+      if (remainingSeconds > 0) {
+        toastification.dismissAll();
+        showCustomToastification(
+          context: context,
+          type: ToastificationType.error,
+          title: 'Wait $remainingSeconds seconds',
+          icon: Icons.error,
+          primaryColor: Colors.red,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+        );
+        return;
+      }
+    }
+    String? empId = await getLoginUserId();
+    debugPrint('empid: $empId');
+    const String url = ApiConstants.todoBuzz;
+
+    final request = http.MultipartRequest('POST', Uri.parse(url))
+      ..fields['enc_key'] = encKey
+      ..fields['emp_id'] = empId!
+      ..fields['todo_id'] = widget.toDoDetailsResponse.data.todoId!;
+
+    try {
+      final response = await request.send();
+      if (response.statusCode == 200) {
+        final responseBody = await response.stream.bytesToString();
+        final Map<String, dynamic> jsonMap = jsonDecode(responseBody);
+        debugPrint('Buzz response: $responseBody');
+        lastBuzzTime = DateTime.now();
+        if (mounted) {
+          showCustomToastification(
+            context: context,
+            type: ToastificationType.success,
+            title: 'Buzzing done successfully!',
+            icon: Icons.check,
+            primaryColor: Colors.green,
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
           );
         }
       } else {
@@ -159,7 +237,7 @@ class _InfoDialogState extends State<InfoDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.only(left: 20, right: 10),
+              padding: const EdgeInsets.only(left: 20, right: 0),
               child: Row(
                 children: [
                   Text(
@@ -170,40 +248,162 @@ class _InfoDialogState extends State<InfoDialog> {
                     ),
                   ),
                   const Spacer(),
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () async {
-                        debugPrint('Todo id = ${data.todoId!}');
-                        await scheduleNotification(context, data.todoId!);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(15),
-                        child: const Icon(
-                          Icons.alarm,
-                          size: 20,
-                          color: Color(0xFF545454),
+                  widget.whichButtonToShow == 'Transfer'
+                      ? PopupMenuButton<String>(
+                          padding: const EdgeInsets.all(0),
+                          tooltip: '',
+                          elevation: 14,
+                          color: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          position: PopupMenuPosition.under,
+                          constraints: const BoxConstraints(
+                            minWidth: 150,
+                          ),
+                          style: const ButtonStyle(),
+                          onSelected: (String value) async {
+                            switch (value) {
+                              case 'Snooze':
+                                await scheduleNotification(
+                                  context,
+                                  widget.toDoDetailsResponse.data.todoId!,
+                                );
+                                break;
+                              case 'Switch':
+                                await getActiveUsersList('Switch');
+                                break;
+                              case 'Buzz':
+                                await todoBuzzApi();
+                                break;
+                              case 'Close':
+                                break;
+                            }
+                          },
+                          icon: const Icon(
+                            Icons.more_vert,
+                            size: 20,
+                            color: Colors.grey,
+                          ),
+                          itemBuilder: (BuildContext context) => [
+                            PopupMenuItem<String>(
+                              value: 'Snooze',
+                              height: 40,
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.alarm,
+                                    size: 20,
+                                    color: Color(0xFF545454),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    'Snooze',
+                                    style: GoogleFonts.inter(
+                                      color: const Color(0xFF545454),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (userRole == 'Admin') ...[
+                              PopupMenuItem<String>(
+                                value: 'Switch',
+                                height: 40,
+                                child: Row(
+                                  children: [
+                                    SvgPicture.asset(
+                                      'assets/icons/arrow.svg',
+                                      height: 17,
+                                      width: 17,
+                                      //color: const Color(0xFF545454),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      'Switch',
+                                      style: GoogleFonts.inter(
+                                        color: const Color(0xFF545454),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            PopupMenuItem<String>(
+                              value: 'Buzz',
+                              height: 40,
+                              child: Row(
+                                children: [
+                                  SvgPicture.asset(
+                                    'assets/icons/buzz.svg',
+                                    height: 17,
+                                    width: 17,
+                                    color: const Color(0xFF545454),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Text(
+                                    'Buzz',
+                                    style: GoogleFonts.inter(
+                                      color: const Color(0xFF545454),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem<String>(
+                              value: 'Close',
+                              padding: const EdgeInsets.all(0),
+                              height: 40,
+                              child: Container(
+                                padding: const EdgeInsets.only(
+                                  top: 10,
+                                  left: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  border: Border(
+                                    top: BorderSide(
+                                      color: Colors.grey.shade400,
+                                      width: 1.0,
+                                    ),
+                                  ),
+                                ),
+                                child: const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.close,
+                                      size: 20,
+                                      color: Color(0xFFFF4343),
+                                    ),
+                                    SizedBox(width: 10),
+                                    Text(
+                                      'Close',
+                                      style: TextStyle(
+                                        color: Color(0xFFFF4343),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Material(
+                          color: Colors.white,
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.pop(context);
+                            },
+                            child: const Padding(
+                              padding: EdgeInsets.all(15.0),
+                              child: Icon(
+                                Icons.close,
+                                size: 20,
+                                color: Color(0xFF545454),
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 5),
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        Navigator.pop(context);
-                      },
-                      child: const Padding(
-                        padding: EdgeInsets.all(15),
-                        child: Icon(
-                          Icons.close,
-                          size: 25,
-                          color: Color(0xFF545454),
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -213,8 +413,6 @@ class _InfoDialogState extends State<InfoDialog> {
               child: Text(
                 data.content!,
                 style: const TextStyle(fontSize: 14),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 3,
               ),
             ),
             const SizedBox(height: 20),
@@ -237,53 +435,82 @@ class _InfoDialogState extends State<InfoDialog> {
                   ),
             _rowWidget('Handling By:', data.handlingPersonName!),
             const SizedBox(height: 15),
-            _buildButton(
-              widget.whichButtonToShow,
-              () async {
-                await getActiveUsersList();
-              },
-              () async {
-                await todoApproveStatus('Approved');
-              },
-              () async {
-                await todoApproveStatus('Rejected');
-              },
-              context,
-              isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                        ),
-                      ),
-                    )
-                  : Text(
-                      'Accept',
+            if ((widget.toDoDetailsResponse.data.handlingPersonEnc! == empId ||
+                    userRole == 'Admin') &&
+                widget.whichButtonToShow == 'Transfer')
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: 20,
+                  right: 10,
+                  top: 20,
+                ),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: MaterialButton(
+                    height: 42,
+                    minWidth: 130,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    color: const Color(0xFF4B4B4B),
+                    onPressed: () async {
+                      await getActiveUsersList('Transfer Now');
+                    },
+                    child: Text(
+                      'Transfer',
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         color: Colors.white,
                       ),
                     ),
-              isLoading1
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: Center(
-                        child: CircularProgressIndicator(
+                  ),
+                ),
+              ),
+            if (widget.whichButtonToShow == 'AcceptDeny')
+              _buildButton(
+                widget.whichButtonToShow,
+                () async {
+                  await todoApproveStatus('Approved');
+                },
+                () async {
+                  await todoApproveStatus('Rejected');
+                },
+                context,
+                isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                          ),
+                        ),
+                      )
+                    : Text(
+                        'Accept',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
                           color: Colors.white,
                         ),
                       ),
-                    )
-                  : Text(
-                      'Deny',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: Colors.white,
+                isLoading1
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                          ),
+                        ),
+                      )
+                    : Text(
+                        'Deny',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: Colors.white,
+                        ),
                       ),
-                    ),
-            ),
+              ),
           ],
         ),
       ),
@@ -293,7 +520,6 @@ class _InfoDialogState extends State<InfoDialog> {
 
 Widget _buildButton(
   String text,
-  void Function()? onPressed,
   void Function()? accept,
   void Function()? deny,
   BuildContext context,
@@ -301,8 +527,6 @@ Widget _buildButton(
   Widget denyText,
 ) {
   switch (text) {
-    case 'Transfer':
-      return _buildTransferButton(onPressed);
     case 'AcceptDeny':
       return _buildAcceptDenyButtons(
         context,
@@ -311,40 +535,9 @@ Widget _buildButton(
         acceptText,
         denyText,
       );
-    case 'Nothing':
-      return const SizedBox();
     default:
       return Container();
   }
-}
-
-Widget _buildTransferButton(void Function()? onPressed) {
-  return Padding(
-    padding: const EdgeInsets.only(
-      left: 20,
-      right: 10,
-      top: 20,
-    ),
-    child: Align(
-      alignment: Alignment.centerRight,
-      child: MaterialButton(
-        height: 42,
-        minWidth: 130,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(5),
-        ),
-        color: const Color(0xFF4B4B4B),
-        onPressed: onPressed,
-        child: Text(
-          'Transfer',
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            color: Colors.white,
-          ),
-        ),
-      ),
-    ),
-  );
 }
 
 Widget _buildAcceptDenyButtons(
@@ -474,22 +667,6 @@ Future<void> todoDetailsApi(
     );
   }
 }
-
-// void showInfoDialog(
-//   BuildContext context,
-//   void Function()? onTap,
-//   ToDoDetailsResponse toDoDetailsResponse,
-// ) {
-//   showDialog(
-//     context: context,
-//     builder: (BuildContext context) {
-//       return InfoDialog(
-//         onTap: onTap,
-//         toDoDetailsResponse: toDoDetailsResponse,
-//       );
-//     },
-//   );
-// }
 
 Widget _rowWidget(String text1, String text2) {
   return Padding(

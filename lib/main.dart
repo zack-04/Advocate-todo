@@ -75,7 +75,7 @@ void main() async {
             MyApp.navigatorKey.currentContext!,
             payload,
             () {},
-            'Nothing',
+            'Transfer',
           );
           debugPrint(
               'Notification clicked: Navigated to HomePage with payload: $payload');
@@ -105,7 +105,7 @@ void backgroundNotificationHandler(NotificationResponse response) async {
       MyApp.navigatorKey.currentContext!,
       response.payload!,
       () {},
-      'Nothing',
+      'Transfer',
     );
   }
 }
@@ -187,6 +187,6 @@ void _onNotificationClick(BuildContext context, String payload) async {
     context,
     payload,
     () {},
-    'Nothing',
+    'Transfer',
   );
 }

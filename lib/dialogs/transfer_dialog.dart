@@ -12,10 +12,12 @@ class TransferDialog extends StatefulWidget {
     required this.userDataResponse,
     required this.todoId,
     required this.onTransfer,
+    required this.buttonTextName,
   });
   final UserDataResponse userDataResponse;
   final String todoId;
   final VoidCallback onTransfer;
+  final String buttonTextName;
 
   @override
   State<TransferDialog> createState() => _TransferDialogState();
@@ -24,12 +26,31 @@ class TransferDialog extends StatefulWidget {
 class _TransferDialogState extends State<TransferDialog> {
   String? selectedPerson;
   final TextEditingController controller = TextEditingController();
+  String? userRole;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserRole();
+  }
+
+  Future<void> _loadUserRole() async {
+    String? role = await getLoginUserRole();
+    setState(() {
+      userRole = role;
+    });
+    debugPrint('Role = $userRole');
+  }
 
   Future<void> tranferToOtherUser() async {
     String? empId = await getLoginUserId();
     debugPrint('empid: $empId');
     debugPrint('Todo id: ${widget.todoId}');
-    const String url = ApiConstants.tranferEndPoint;
+    String url = widget.buttonTextName == 'Transfer Now'
+        ? ApiConstants.tranferEndPoint
+        : ApiConstants.todoSwitch;
+    debugPrint('Url: $url');
+
     if (selectedPerson == null) {
       if (mounted) {
         showCustomToastification(
@@ -61,13 +82,16 @@ class _TransferDialogState extends State<TransferDialog> {
           showCustomToastification(
             context: context,
             type: ToastificationType.success,
-            title: 'Transferred successfully!',
+            title: widget.buttonTextName == 'Switch'
+                ? 'Switched successfully!'
+                : 'Transferred successfully!',
             icon: Icons.check,
             primaryColor: Colors.green,
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
           );
           widget.onTransfer();
+          Navigator.pop(context);
           Navigator.pop(context);
         }
       } else {
@@ -229,7 +253,7 @@ class _TransferDialogState extends State<TransferDialog> {
                         await tranferToOtherUser();
                       },
                       child: Text(
-                        'Transfer Now',
+                        widget.buttonTextName,
                         style: GoogleFonts.inter(
                           fontSize: 13,
                           color: Colors.white,
@@ -252,6 +276,7 @@ void showTransferDialog(
   UserDataResponse userDataResponse,
   String todoId,
   VoidCallback onTransfer,
+  String buttonTextName,
 ) {
   showDialog(
     context: context,
@@ -260,6 +285,7 @@ void showTransferDialog(
         userDataResponse: userDataResponse,
         todoId: todoId,
         onTransfer: () => onTransfer(),
+        buttonTextName: buttonTextName,
       );
     },
   );

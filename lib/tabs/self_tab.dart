@@ -6,6 +6,7 @@ import 'package:advocate_todo_list/model/todo_list_model.dart';
 import 'package:drag_and_drop_lists/drag_and_drop_lists.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 
 class SelfTab extends StatefulWidget {
@@ -14,10 +15,12 @@ class SelfTab extends StatefulWidget {
     this.toDoResponse,
     required this.onTransfer,
     required this.onRefresh,
+    required this.toggleCreateForm,
   });
   final ToDoResponse? toDoResponse;
   final VoidCallback onTransfer;
   final Future<void> Function() onRefresh;
+  final VoidCallback toggleCreateForm;
 
   @override
   State<SelfTab> createState() => _SelfTabState();
@@ -32,7 +35,11 @@ class _SelfTabState extends State<SelfTab> {
     _buildLists();
   }
 
-  Future<void> changeWorkStatus(String todoId, int newListIndex) async {
+  Future<void> changeWorkStatus(
+    String todoId,
+    int newListIndex,
+    List<String> todoIdsOrder,
+  ) async {
     String? empId = await getLoginUserId();
     debugPrint('empid: $empId');
     String status;
@@ -50,7 +57,8 @@ class _SelfTabState extends State<SelfTab> {
       ..fields['enc_key'] = encKey
       ..fields['emp_id'] = empId!
       ..fields['todo_id'] = todoId
-      ..fields['todo_status'] = status;
+      ..fields['todo_status'] = status
+      ..fields['order'] = jsonEncode(todoIdsOrder);
 
     try {
       final response = await request.send();
@@ -137,6 +145,7 @@ class _SelfTabState extends State<SelfTab> {
           ),
           header: _buildListHeader(title, _getListColor(title)),
           children: items,
+          contentsWhenEmpty: const Text('No items found'),
         ),
       );
     });
@@ -312,6 +321,44 @@ class _SelfTabState extends State<SelfTab> {
               color: Colors.grey[100],
               borderRadius: BorderRadius.circular(8),
             ),
+            contentsWhenEmpty: Column(
+              children: [
+                Image.asset(
+                  'assets/images/emptyList.jpeg',
+                  height: 200,
+                  width: 200,
+                  fit: BoxFit.cover,
+                ),
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 50),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 40,
+                    child: TextButton(
+                      onPressed: widget.toggleCreateForm,
+                      style: ButtonStyle(
+                        backgroundColor: WidgetStateProperty.all<Color>(
+                          Colors.blue,
+                        ),
+                        shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+                          RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8.0),
+                          ),
+                        ),
+                      ),
+                      child: Text(
+                        'Create ToDo',
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -328,9 +375,13 @@ class _SelfTabState extends State<SelfTab> {
       var movedItem = _lists[oldListIndex].children.removeAt(oldItemIndex);
       _lists[newListIndex].children.insert(newItemIndex, movedItem);
 
+      List<String> todoIdsOrder = _getListOrder(newListIndex);
+      debugPrint(
+          'Moved todo IDs in new list order: ${todoIdsOrder.join(', ')}');
+
       String todoId = (movedItem as CustomDragAndDropItem).todoId;
       debugPrint('Dragged todoId = $todoId');
-      changeWorkStatus(todoId, newListIndex);
+      changeWorkStatus(todoId, newListIndex, todoIdsOrder);
       _recalculateNumbers();
     });
 
@@ -338,6 +389,13 @@ class _SelfTabState extends State<SelfTab> {
     debugPrint('Oldlistindex = $oldListIndex');
     debugPrint('newitemindex = $newItemIndex');
     debugPrint('newListindex = $newListIndex');
+  }
+
+  List<String> _getListOrder(int listIndex) {
+    return _lists[listIndex]
+        .children
+        .map((item) => (item as CustomDragAndDropItem).todoId)
+        .toList();
   }
 
   void _recalculateNumbers() {

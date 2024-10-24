@@ -24,18 +24,32 @@ Future<ToDoResponse?> fetchTodoList(String tabType, String empId) async {
 
   try {
     final response = await request.send();
-    debugPrint('response = $response');
+    debugPrint('response todo status code = ${response.statusCode}');
+
     if (response.statusCode == 200) {
       final responseBody = await response.stream.bytesToString();
-      debugPrint('body = $responseBody');
-      final data = jsonDecode(responseBody);
-      toDoResponse = ToDoResponse.fromJson(data);
+      debugPrint('body todo = $responseBody');
+
+      if (responseBody.isNotEmpty) {
+        final Map<String, dynamic> data = jsonDecode(responseBody);
+        debugPrint('data todo = $data');
+
+        if (data.isNotEmpty && data['status'] == 'Success') {
+          toDoResponse = ToDoResponse.fromJson(data);
+          debugPrint('todoresponse = $toDoResponse');
+        } else {
+          debugPrint('Invalid or empty data: $data');
+        }
+      } else {
+        debugPrint('Response body is empty');
+      }
     } else {
-      debugPrint('Failed: ${response.statusCode}');
+      debugPrint('Failed with status code: ${response.statusCode}');
     }
   } catch (e) {
-    debugPrint('Error: $e');
+    debugPrint('Error in todo list: $e');
   }
+
   return toDoResponse;
 }
 
@@ -45,16 +59,16 @@ Future<String> getActiveUserId() async {
   const String url = ApiConstants.activeUserEndPoint;
 
   final request = http.MultipartRequest('POST', Uri.parse(url))
-    ..fields['enc_key'] = 'iq8xkfInuzVYYnE4YIpapvQUg6uU'
+    ..fields['enc_key'] = encKey
     ..fields['emp_id'] = empId!;
 
   try {
     final response = await request.send();
-    debugPrint('response: $response');
+    debugPrint('response user: $response');
     debugPrint('code: ${response.statusCode}');
     if (response.statusCode == 200) {
       final responseBody = await response.stream.bytesToString();
-      debugPrint('responsebody: $responseBody');
+      debugPrint('responsebody user: $responseBody');
 
       final json = jsonDecode(responseBody);
       final data = json['data'];

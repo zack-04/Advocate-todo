@@ -94,6 +94,10 @@ class _TodoListPageState extends State<TodoListPage> {
       for (var result in results) {
         debugPrint('Result = ${result.toString()}');
       }
+      debugPrint('Self count = ${results[0]!.selfCount!}');
+      debugPrint('Approval count = ${results[0]!.approvalCount!}');
+      debugPrint('parsed self count = ${int.parse(results[0]!.selfCount!)}');
+      debugPrint('parsed app count = ${int.parse(results[0]!.approvalCount!)}');
 
       setState(() {
         tabData = results;
@@ -279,6 +283,7 @@ class _TodoListPageState extends State<TodoListPage> {
           toDoResponse: tabData[0],
           onTransfer: () => fetchData(),
           onRefresh: () => fetchData(),
+          toggleCreateForm: toggleCreateForm,
         ),
         AssignedTab(
           toDoResponse: tabData[1],

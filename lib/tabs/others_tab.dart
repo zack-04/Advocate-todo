@@ -71,10 +71,11 @@ class _OthersTabState extends State<OthersTab> {
 
     try {
       final response = await request.send();
-      debugPrint('response = $response');
+      debugPrint('response others = $response');
       if (response.statusCode == 200) {
         final responseBody = await response.stream.bytesToString();
         final data = jsonDecode(responseBody);
+        debugPrint('data others = $data');
         setState(() {
           updatedToDoResponse = ToDoResponse.fromJson(data);
         });

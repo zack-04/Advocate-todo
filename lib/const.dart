@@ -16,11 +16,19 @@ class ApiConstants {
   static const String allUsers = '${baseUrl}User/Active-User-List';
   static const String todoApproveStatus = '${baseUrl}Todo/Todo-Approval-Status';
   static const String todoWorkStatusChange = '${baseUrl}Todo/Todo-Work-Status';
+  static const String allotingUserList = '${baseUrl}Todo/ToDo-Other-User-List';
+  static const String todoSwitch = '${baseUrl}Todo/Todo-Switch';
+  static const String todoBuzz = '${baseUrl}Todo/ToDo-Buzz';
 }
 
 Future<String?> getLoginUserId() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   return prefs.getString('login_user_id');
+}
+
+Future<String?> getLoginUserRole() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getString('login_user_role');
 }
 
 const Map<String, String> taskStatus = {

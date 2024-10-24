@@ -9,13 +9,19 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:toastification/toastification.dart';
 
 Future<void> createNotificationChannel() async {
-  const AndroidNotificationChannel channel = AndroidNotificationChannel(
-    'task_reminder_with_alarm_sound1',
-    'Task Reminder with alarm sound1',
-    description: 'This channel is used for important notifications.',
+  final Int64List vibrationPattern = Int64List(4);
+  vibrationPattern[0] = 0;
+  vibrationPattern[1] = 1000;
+  vibrationPattern[2] = 500;
+  vibrationPattern[3] = 2000;
+  AndroidNotificationChannel channel = AndroidNotificationChannel(
+    'reminder_testing1',
+    'Reminder testing1',
+    description: 'Reminder testing1 desc',
     importance: Importance.max,
-    sound: RawResourceAndroidNotificationSound('beep_sound'),
     playSound: false,
+    enableVibration: true,
+    vibrationPattern: vibrationPattern,
   );
 
   await flutterLocalNotificationsPlugin
@@ -30,15 +36,20 @@ Future<void> showNotification({
   required tz.TZDateTime time,
   required String todoId,
 }) async {
+  final Int64List vibrationPattern = Int64List(4);
+  vibrationPattern[0] = 0;
+  vibrationPattern[1] = 1000;
+  vibrationPattern[2] = 500;
+  vibrationPattern[3] = 2000;
   AndroidNotificationDetails androidPlatformChannelSpecifics =
       AndroidNotificationDetails(
-    'task_reminder_with_alarm_sound1',
-    'Task Reminder with alarm sound1',
+    'reminder_testing1',
+    'Reminder testing1',
     importance: Importance.max,
     priority: Priority.high,
-    sound: const RawResourceAndroidNotificationSound('beep_sound'),
     playSound: false,
     ongoing: true,
+    vibrationPattern: vibrationPattern,
     enableVibration: true,
     additionalFlags: Int32List.fromList(<int>[4]),
     audioAttributesUsage: AudioAttributesUsage.alarm,

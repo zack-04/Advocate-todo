@@ -1,4 +1,4 @@
-package com.example.advocate_todo_list
+package com.example.advocate_todo
 
 import android.media.MediaPlayer
 import android.os.Bundle

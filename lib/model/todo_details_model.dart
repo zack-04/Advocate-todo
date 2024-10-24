@@ -25,6 +25,7 @@ class ToDoData {
   final String? todoStatus;
   final String? creatorName;
   final String? handlingPersonName;
+  final String? handlingPersonEnc;
   final String? transferStatus;
   final String? transferPersonName;
   final String? transferPersonId;
@@ -40,6 +41,7 @@ class ToDoData {
     this.todoStatus,
     this.creatorName,
     this.handlingPersonName,
+    this.handlingPersonEnc,
     this.transferStatus,
     this.transferPersonName,
     this.transferPersonId,
@@ -57,6 +59,7 @@ class ToDoData {
       todoStatus: json['todo_status'],
       creatorName: json['creator_name'],
       handlingPersonName: json['handling_person_name'],
+      handlingPersonEnc: json['handling_person_enc'],
       transferStatus: json['transfer_status'],
       transferPersonName: json['transfer_person_name'],
       transferPersonId: json['transfer_person_id'],
