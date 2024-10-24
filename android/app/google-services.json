@@ -1,0 +1,98 @@
+{
+  "project_info": {
+    "project_number": "873351873427",
+    "firebase_url": "https://linkwork-in-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "linkwork-in",
+    "storage_bucket": "linkwork-in.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:873351873427:android:c7dc95475f70c898a89e66",
+        "android_client_info": {
+          "package_name": "com.example.advocate_todo_list"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "873351873427-qchd81nr0hit75uft4msem430nes200f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDgUOzjCNVs5CBd79a7b4iZrFkMasuBviw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "873351873427-qchd81nr0hit75uft4msem430nes200f.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:873351873427:android:09b8bdff882eb5a1a89e66",
+        "android_client_info": {
+          "package_name": "com.example.demo_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "873351873427-qchd81nr0hit75uft4msem430nes200f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDgUOzjCNVs5CBd79a7b4iZrFkMasuBviw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "873351873427-qchd81nr0hit75uft4msem430nes200f.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:873351873427:android:43814674aa4ade4ca89e66",
+        "android_client_info": {
+          "package_name": "com.example.linkwork"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "873351873427-qchd81nr0hit75uft4msem430nes200f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDgUOzjCNVs5CBd79a7b4iZrFkMasuBviw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "873351873427-qchd81nr0hit75uft4msem430nes200f.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

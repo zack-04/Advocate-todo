@@ -1,5 +1,7 @@
 import 'package:advocate_todo_list/methods/methods.dart';
 import 'package:advocate_todo_list/pages/home_page.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:open_filex/open_filex.dart';
@@ -15,21 +17,25 @@ import 'package:advocate_todo_list/pages/login_page.dart';
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+
+  debugPrint('Handling a background message: ${message.messageId}');
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Permission.notification.request();
   await Permission.ignoreBatteryOptimizations.request();
 
-  // Request audio recording permission
   await Permission.microphone.request();
 
   await requestExactAlarmsPermission();
 
-  // Initialize timezone package
   tz.initializeTimeZones();
   tz.setLocalLocation(tz.getLocation('Asia/Kolkata'));
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  // Android initialization settings for notifications
   const AndroidInitializationSettings initializationSettingsAndroid =
       AndroidInitializationSettings('@mipmap/ic_launcher');
   final NotificationAppLaunchDetails? notificationAppLaunchDetails =
@@ -86,6 +92,29 @@ void main() async {
   );
 
   await createNotificationChannel();
+
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    RemoteNotification? notification = message.notification;
+    AndroidNotification? android = message.notification?.android;
+
+    if (notification != null && android != null) {
+      flutterLocalNotificationsPlugin.show(
+        notification.hashCode,
+        notification.title,
+        notification.body,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            '@mipmap/ic_launcher',
+            'AdvocateTodo',
+            channelDescription: 'AdvocateTodo notification channel',
+            importance: Importance.max,
+            priority: Priority.high,
+          ),
+        ),
+        payload: message.data['payload'], // Pass the payload
+      );
+    }
+  });
 
   runApp(MyApp(
     payload: payload,
