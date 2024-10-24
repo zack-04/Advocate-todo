@@ -1,3 +1,4 @@
+import 'package:advocate_todo_list/methods/firebase_api.dart';
 import 'package:advocate_todo_list/pages/home_page.dart';
 import 'package:advocate_todo_list/widgets/custom_button.dart';
 import 'package:advocate_todo_list/widgets/toast_message.dart';
@@ -65,6 +66,7 @@ class _LoginPageState extends State<LoginPage> {
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
           );
+          await sendFcmToken();
 
           Navigator.pushAndRemoveUntil(
             context,
@@ -109,6 +111,63 @@ class _LoginPageState extends State<LoginPage> {
       setState(() {
         isLoading = false;
       });
+    }
+  }
+
+  Future<void> sendFcmToken() async {
+    String? empId = await getLoginUserId();
+    String? fcmToken = await FirebaseApi().getFcmToken();
+
+    debugPrint('empid: $empId');
+    debugPrint('Fcm token: $fcmToken');
+    const String url = ApiConstants.sendFcmToken;
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        body: {
+          'enc_key': encKey,
+          'emp_id': empId,
+          'fcm_token': fcmToken,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseBody = jsonDecode(response.body);
+
+        if (responseBody['status'] == 'Success') {
+        } else if (responseBody['status'] == 'In-Valid User') {
+          showCustomToastification(
+            context: context,
+            type: ToastificationType.error,
+            title: 'Wrong Credentials!',
+            icon: Icons.error,
+            primaryColor: Colors.red,
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+          );
+        }
+      } else {
+        showCustomToastification(
+          context: context,
+          type: ToastificationType.error,
+          title: 'Server error! Please try again.',
+          icon: Icons.error,
+          primaryColor: Colors.red,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+        );
+      }
+    } catch (e) {
+      showCustomToastification(
+        context: context,
+        type: ToastificationType.error,
+        title: 'Please check your connection.',
+        icon: Icons.error,
+        primaryColor: Colors.red,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+      );
     }
   }
 
@@ -163,7 +222,8 @@ class _LoginPageState extends State<LoginPage> {
                               focusNode: mobFocusNode,
                               keyboardType: TextInputType.number,
                               cursorColor: Colors.black,
-                              autovalidateMode: AutovalidateMode.onUserInteraction,
+                              autovalidateMode:
+                                  AutovalidateMode.onUserInteraction,
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter mobile number';
@@ -221,7 +281,8 @@ class _LoginPageState extends State<LoginPage> {
                               focusNode: passFocusNode,
                               obscureText: _obscureText,
                               cursorColor: Colors.black,
-                              autovalidateMode: AutovalidateMode.onUserInteraction,
+                              autovalidateMode:
+                                  AutovalidateMode.onUserInteraction,
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter password';
@@ -281,5 +342,4 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
-
 }

@@ -1,3 +1,4 @@
+import 'package:advocate_todo_list/methods/firebase_api.dart';
 import 'package:advocate_todo_list/methods/methods.dart';
 import 'package:advocate_todo_list/pages/home_page.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -25,6 +26,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  await FirebaseApi().initNotifications();
   await Permission.notification.request();
   await Permission.ignoreBatteryOptimizations.request();
 

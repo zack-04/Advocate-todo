@@ -19,6 +19,7 @@ class ApiConstants {
   static const String allotingUserList = '${baseUrl}Todo/ToDo-Other-User-List';
   static const String todoSwitch = '${baseUrl}Todo/Todo-Switch';
   static const String todoBuzz = '${baseUrl}Todo/ToDo-Buzz';
+  static const String sendFcmToken = '${baseUrl}Login/Firebase-Token';
 }
 
 Future<String?> getLoginUserId() async {
