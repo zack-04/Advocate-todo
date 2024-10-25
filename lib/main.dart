@@ -67,16 +67,41 @@ void main() async {
         path.endsWith('.gif');
   }
 
+  bool isPdfPath(String path) {
+    return path.endsWith('.pdf');
+  }
+
+  bool isWordPath(String path) {
+    return path.endsWith('.doc') || path.endsWith('.docx');
+  }
+
+// Unified function to open files with fallback
+  Future<void> openFileWithFallback(String filePath) async {
+    final result = await OpenFilex.open(filePath);
+    debugPrint('Open file result: $result');
+    if (result.type != ResultType.done) {
+      debugPrint('File could not be opened, navigating to HomePage');
+      MyApp.navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (context) => const HomePage(),
+        ),
+      );
+    }
+  }
+
+// Modified notification handler
   await flutterLocalNotificationsPlugin.initialize(
     initializationSettings,
     onDidReceiveNotificationResponse: (response) async {
       if (response.payload != null) {
         String payload = response.payload!;
-        if (isImagePath(payload)) {
-          openImage(payload);
-          debugPrint(
-              'Notification clicked: Image opened from payload: $payload');
+
+        // Check file type and open accordingly
+        if (isImagePath(payload) || isPdfPath(payload) || isWordPath(payload)) {
+          openFileWithFallback(payload);
+          debugPrint('Notification clicked: File opened from payload: $payload');
         } else {
+          // Default behavior for other types
           MyApp.navigatorKey.currentState?.push(
             MaterialPageRoute(
               builder: (context) => const HomePage(),
@@ -85,16 +110,16 @@ void main() async {
           todoDetailsApi(
             MyApp.navigatorKey.currentContext!,
             payload,
-            () {},
+                () {},
             'Transfer',
           );
-          debugPrint(
-              'Notification clicked: Navigated to HomePage with payload: $payload');
+          debugPrint('Notification clicked: Navigated to HomePage with payload: $payload');
         }
       }
     },
     onDidReceiveBackgroundNotificationResponse: backgroundNotificationHandler,
   );
+
 
   await createNotificationChannel();
 

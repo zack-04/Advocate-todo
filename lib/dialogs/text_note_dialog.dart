@@ -41,8 +41,14 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
 
   Future<void> _createBulletin() async {
     if (loginUserId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('User not logged in!')),
+      showCustomToastification(
+        context: context,
+        type: ToastificationType.error,
+        title: 'User Not Logged In',
+        icon: Icons.error,
+        primaryColor: Colors.red,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
       );
       return;
     }
@@ -64,28 +70,9 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
       return;
     }
 
-    // Ensure user_ids are properly added to tag_users
     final List<String> tagUsers =
-    selectedUsers.map((user) => user['user_id']!).toList();
+        selectedUsers.map((user) => user['user_id']!).toList();
 
-    // Check if any users are tagged
-    if (tagUsers.isEmpty) {
-      showCustomToastification(
-        context: context,
-        type: ToastificationType.error,
-        title: 'Tag Users Required',
-        icon: Icons.warning,
-        primaryColor: Colors.red,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        onTap: () {
-          // Optional: Navigate to a specific page or handle onTap event
-        },
-      );
-      return;
-    }
-
-    // Debug log to show selected user IDs
     print("Selected user IDs: $tagUsers");
 
     const String url = ApiConstants.bulletinCreate;
@@ -97,14 +84,14 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
       'content': content,
     };
 
-    // Debug log to show the entire body being sent to API
     print("API Request Body: $body");
 
     try {
       final response = await http.post(
         Uri.parse(url),
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded', // or 'application/json'
+          'Content-Type':
+              'application/x-www-form-urlencoded', // or 'application/json'
         },
         body: body,
       );
@@ -112,28 +99,42 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['status'] == 'Success') {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(data['remarks'])),
-          );
           Navigator.pop(context);
           widget.refreshCallback();
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to create bulletin')),
+          showCustomToastification(
+            context: context,
+            type: ToastificationType.error,
+            title: 'Failed To Create Bulletin',
+            icon: Icons.error,
+            primaryColor: Colors.red,
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
           );
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${response.statusCode}')),
+        showCustomToastification(
+          context: context,
+          type: ToastificationType.error,
+          title: 'Failed to Create Bulletin',
+          icon: Icons.error,
+          primaryColor: Colors.red,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+      showCustomToastification(
+        context: context,
+        type: ToastificationType.error,
+        title: 'Server Error',
+        icon: Icons.error,
+        primaryColor: Colors.red,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
       );
     }
   }
-
 
   @override
   Widget build(BuildContext context) {

@@ -122,24 +122,8 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
     }
 
     final List<String> tagUsers =
-        selectedUsers.map((user) => user['user_id']!).toList();
+    selectedUsers.map((user) => user['user_id']!).toList();
     debugPrint('Tagged users: $tagUsers');
-
-    if (tagUsers.isEmpty) {
-      showCustomToastification(
-        context: context,
-        type: ToastificationType.error,
-        title: 'Tag Users Required',
-        icon: Icons.warning,
-        primaryColor: Colors.red,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        onTap: () {
-          // Optional: Navigate to a specific page or handle onTap event
-        },
-      );
-      return;
-    }
 
     final Uri uri = Uri.parse(ApiConstants.bulletinCreate);
     var request = http.MultipartRequest('POST', uri);
@@ -152,7 +136,7 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
     if (recordingPath != null) {
       debugPrint('Attaching recorded file: $recordingPath');
       var file =
-          await http.MultipartFile.fromPath('voice_note', recordingPath!);
+      await http.MultipartFile.fromPath('voice_note', recordingPath!);
       request.files.add(file);
     }
 
@@ -176,8 +160,14 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
     } else {
       debugPrint(
           'Failed to create voice note. Status code: ${response.statusCode}');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to create voice note!')),
+      showCustomToastification(
+        context: context,
+        type: ToastificationType.error,
+        title: 'Failed To Create',
+        icon: Icons.error,
+        primaryColor: Colors.red,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
       );
     }
   }
@@ -299,11 +289,18 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
       );
     } catch (e) {
       debugPrint('Failed to stop recording: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to stop recording: $e')),
+      showCustomToastification(
+        context: context,
+        type: ToastificationType.error,
+        title: 'Failed To Stop Recording',
+        icon: Icons.error,
+        primaryColor: Colors.red,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
       );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

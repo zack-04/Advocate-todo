@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:toastification/toastification.dart';
 
 import '../const.dart';
+import '../widgets/toast_message.dart';
 
 class UserSearch extends StatefulWidget {
   final List<Map<String, String>> selectedUsers;
@@ -73,14 +75,25 @@ class _UserSearchState extends State<UserSearch> {
           filteredUsers = allUsers;
         });
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Error fetching users: ${response.statusCode}')),
+        showCustomToastification(
+          context: context,
+          type: ToastificationType.error,
+          title: 'Error Fetching Users',
+          icon: Icons.error,
+          primaryColor: Colors.red,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching users: $e')),
+      showCustomToastification(
+        context: context,
+        type: ToastificationType.error,
+        title: 'Error Fetching Users',
+        icon: Icons.error,
+        primaryColor: Colors.red,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
       );
     }
   }

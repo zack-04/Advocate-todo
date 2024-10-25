@@ -25,7 +25,8 @@
         android:label="Advocate Todo List"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        tools:replace="android:label, android:icon">
+        tools:replace="android:label, android:icon"
+        android:requestLegacyExternalStorage="true">
 
         <activity
             android:name=".MainActivity"
