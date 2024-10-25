@@ -202,8 +202,8 @@ class _BulletinPageState extends State<BulletinPage> {
     return path;
   }
 
-  Future<void> _downloadAndSaveAudio(
-      String voiceNoteUrl, String fileName) async {
+  Future<void> _downloadAndSaveAudio(String voiceNoteUrl,
+      String fileName) async {
     try {
       final response = await http.get(Uri.parse(voiceNoteUrl));
 
@@ -233,7 +233,10 @@ class _BulletinPageState extends State<BulletinPage> {
 
     if (downloadTime != null) {
       DateTime downloadDateTime = DateTime.parse(downloadTime);
-      if (DateTime.now().difference(downloadDateTime).inHours >= 24) {
+      if (DateTime
+          .now()
+          .difference(downloadDateTime)
+          .inHours >= 24) {
         final filePath = await _getLocalFilePath(fileName);
         final file = File(filePath);
 
@@ -281,10 +284,11 @@ class _BulletinPageState extends State<BulletinPage> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header Row (Bulletin text and horn icon)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -309,43 +313,45 @@ class _BulletinPageState extends State<BulletinPage> {
                 ],
               ),
               const SizedBox(height: 15),
-              isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : bulletinData.isEmpty
-                  ? Expanded(
-                  child: Image.asset(
-                    'assets/images/no_bulletin.png',
-                    fit: BoxFit.contain,
-                    height: MediaQuery.of(context).size.height * 0.4,
-                  ))
-                  : Expanded(
-                child: RefreshIndicator(
+
+              // Scrollable Content
+              Expanded(
+                child: isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : bulletinData.isEmpty
+                    ? Image.asset(
+                  'assets/images/no_bulletin.png',
+                  fit: BoxFit.contain,
+                  height: MediaQuery
+                      .of(context)
+                      .size
+                      .height * 0.4,
+                )
+                    : RefreshIndicator(
                   backgroundColor: Colors.white,
                   color: Colors.black,
                   onRefresh: _handleRefresh,
                   child: ListView.builder(
                     controller: _scrollController,
-                    physics:
-                    const AlwaysScrollableScrollPhysics(), // Ensure list can scroll
+                    physics: const AlwaysScrollableScrollPhysics(),
                     itemCount: bulletinData.length,
                     itemBuilder: (context, index) {
                       final item = bulletinData[index];
                       final isVoiceNote = item['type'] == 'Voice';
                       final voiceNoteUrl = item['voice_note_file'];
-                      final fileName = voiceNoteUrl?.split('/').last;
+                      final fileName = voiceNoteUrl
+                          ?.split('/')
+                          .last;
 
                       return CustomContainer(
-                        creatorName:
-                        item['creator_name'] ?? 'Unknown',
+                        creatorName: item['creator_name'] ?? 'Unknown',
                         updatedTime: item['updated_time'] ?? 'N/A',
                         bulletinContent: isVoiceNote
                             ? ''
                             : item['bulletin_content'] ?? '',
                         bulletinType: item['type'] ?? 'Text',
-                        taggedUsers:
-                        List<String>.from(item['users'] ?? []),
-                        extraWidget: isVoiceNote &&
-                            voiceNoteUrl != null
+                        taggedUsers: List<String>.from(item['users'] ?? []),
+                        extraWidget: isVoiceNote && voiceNoteUrl != null
                             ? Row(
                           children: [
                             IconButton(
@@ -353,8 +359,7 @@ class _BulletinPageState extends State<BulletinPage> {
                                 playingVoiceNote == voiceNoteUrl
                                     ? Icons.pause
                                     : Icons.play_arrow,
-                                color: playingVoiceNote ==
-                                    voiceNoteUrl
+                                color: playingVoiceNote == voiceNoteUrl
                                     ? Colors.green
                                     : Colors.red,
                               ),
@@ -363,36 +368,31 @@ class _BulletinPageState extends State<BulletinPage> {
                                     voiceNoteUrl, fileName!);
                               },
                             ),
-                            if (playingVoiceNote ==
-                                voiceNoteUrl)
+                            if (playingVoiceNote == voiceNoteUrl)
                               Expanded(
                                 child: AudioFileWaveforms(
                                   size: Size(
-                                    MediaQuery.of(context)
+                                    MediaQuery
+                                        .of(context)
                                         .size
                                         .width *
                                         0.6,
                                     40,
                                   ),
-                                  playerController:
-                                  playerController,
+                                  playerController: playerController,
                                   waveformType:
                                   WaveformType.fitWidth,
                                   playerWaveStyle:
                                   const PlayerWaveStyle(
-                                    fixedWaveColor:
-                                    Color(0xFF545454),
-                                    liveWaveColor:
-                                    Color(0xFF545454),
+                                    fixedWaveColor: Color(0xFF545454),
+                                    liveWaveColor: Color(0xFF545454),
                                   ),
                                 ),
                               ),
                             const SizedBox(width: 10),
-                            if (playingVoiceNote ==
-                                voiceNoteUrl)
+                            if (playingVoiceNote == voiceNoteUrl)
                               Text(
-                                _formatDuration(
-                                    playbackDuration),
+                                _formatDuration(playbackDuration),
                               ),
                           ],
                         )
@@ -402,7 +402,6 @@ class _BulletinPageState extends State<BulletinPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 120),
             ],
           ),
         ),
