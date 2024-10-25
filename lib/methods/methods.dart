@@ -15,9 +15,9 @@ Future<void> createNotificationChannel() async {
   vibrationPattern[2] = 500;
   vibrationPattern[3] = 2000;
   AndroidNotificationChannel channel = AndroidNotificationChannel(
-    'reminder_testing1',
-    'Reminder testing1',
-    description: 'Reminder testing1 desc',
+    'reminder_todo',
+    'Reminder Todo',
+    description: 'Reminder todo desc',
     importance: Importance.max,
     playSound: false,
     enableVibration: true,
@@ -43,8 +43,8 @@ Future<void> showNotification({
   vibrationPattern[3] = 2000;
   AndroidNotificationDetails androidPlatformChannelSpecifics =
       AndroidNotificationDetails(
-    'reminder_testing1',
-    'Reminder testing1',
+    'reminder_todo',
+    'Reminder Todo',
     importance: Importance.max,
     priority: Priority.high,
     playSound: false,

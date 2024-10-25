@@ -22,6 +22,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
 
   debugPrint('Handling a background message: ${message.messageId}');
+  debugPrint('Background title: ${message.notification!.title}');
+  debugPrint('Background body: ${message.notification!.body}');
 }
 
 void main() async {
@@ -95,29 +97,6 @@ void main() async {
   );
 
   await createNotificationChannel();
-
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    RemoteNotification? notification = message.notification;
-    AndroidNotification? android = message.notification?.android;
-
-    if (notification != null && android != null) {
-      flutterLocalNotificationsPlugin.show(
-        notification.hashCode,
-        notification.title,
-        notification.body,
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            '@mipmap/ic_launcher',
-            'AdvocateTodo',
-            channelDescription: 'AdvocateTodo notification channel',
-            importance: Importance.max,
-            priority: Priority.high,
-          ),
-        ),
-        payload: message.data['payload'], // Pass the payload
-      );
-    }
-  });
 
   runApp(MyApp(
     payload: payload,
