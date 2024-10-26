@@ -306,7 +306,7 @@ Future<void> pickDateAndTime(BuildContext context) async {
         context: context,
         type: ToastificationType.success,
         title: 'Time picked!',
-        icon: Icons.check,
+        // icon: Icons.check,
         primaryColor: Colors.green,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,

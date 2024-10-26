@@ -5,7 +5,7 @@ void showCustomToastification({
   required BuildContext context,
   required ToastificationType type,
   required String title,
-  required IconData icon,
+
   required Color primaryColor,
   required Color backgroundColor,
   required Color foregroundColor,
@@ -24,8 +24,8 @@ void showCustomToastification({
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: foregroundColor),
-          const SizedBox(width: 8),
+
+
           Expanded(
             child: Text(
               title,

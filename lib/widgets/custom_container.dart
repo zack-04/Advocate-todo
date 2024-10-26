@@ -7,7 +7,6 @@ class CustomContainer extends StatelessWidget {
   final String bulletinContent;
   final String bulletinType;
   final List<String>? taggedUsers;
-
   final Widget? extraWidget;
 
   const CustomContainer({
@@ -25,7 +24,7 @@ class CustomContainer extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(top: 20, bottom: 10),
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 5),
+        margin: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           color: Colors.white,
@@ -65,8 +64,10 @@ class CustomContainer extends StatelessWidget {
               ),
               const SizedBox(height: 10),
 
-              // Render the bulletinContent only if it is not empty or null
-              if (bulletinContent.isNotEmpty)
+              // Display either bulletinContent or extraWidget based on bulletinType
+              if (bulletinType == 'Voice' && extraWidget != null) ...[
+                extraWidget!,
+              ] else if (bulletinContent.isNotEmpty) ...[
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -78,6 +79,7 @@ class CustomContainer extends StatelessWidget {
                     ),
                   ),
                 ),
+              ],
 
               if (taggedUsers != null && taggedUsers!.isNotEmpty) ...[
                 const SizedBox(height: 10),
@@ -103,14 +105,8 @@ class CustomContainer extends StatelessWidget {
                   }).toList(),
                 ),
               ],
-
-              if (extraWidget != null) ...[
-                const SizedBox(height: 10),
-                extraWidget!,
-              ],
             ],
           ),
-
         ),
       ),
     );

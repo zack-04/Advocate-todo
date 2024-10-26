@@ -58,7 +58,7 @@ class _BulletinPageState extends State<BulletinPage> {
 
     if (loginUserId != null) {
       await fetchBulletinData(loginUserId!);
-      await _downloadAllVoiceNotes(); // Download all voice notes after data fetch
+      await _downloadAllVoiceNotes();
     } else {
       setState(() {
         isLoading = false;
@@ -85,7 +85,7 @@ class _BulletinPageState extends State<BulletinPage> {
           });
         } else {
           setState(() {
-            bulletinData = []; // No data scenario
+            bulletinData = [];
             isLoading = false;
           });
         }
@@ -183,10 +183,10 @@ class _BulletinPageState extends State<BulletinPage> {
 
     _animationTimer =
         Timer.periodic(const Duration(milliseconds: 1000), (timer) {
-          setState(() {
-            playbackDuration++;
-          });
-        });
+      setState(() {
+        playbackDuration++;
+      });
+    });
   }
 
   void _stopAnimation() {
@@ -202,8 +202,8 @@ class _BulletinPageState extends State<BulletinPage> {
     return path;
   }
 
-  Future<void> _downloadAndSaveAudio(String voiceNoteUrl,
-      String fileName) async {
+  Future<void> _downloadAndSaveAudio(
+      String voiceNoteUrl, String fileName) async {
     try {
       final response = await http.get(Uri.parse(voiceNoteUrl));
 
@@ -233,10 +233,7 @@ class _BulletinPageState extends State<BulletinPage> {
 
     if (downloadTime != null) {
       DateTime downloadDateTime = DateTime.parse(downloadTime);
-      if (DateTime
-          .now()
-          .difference(downloadDateTime)
-          .inHours >= 24) {
+      if (DateTime.now().difference(downloadDateTime).inHours >= 24) {
         final filePath = await _getLocalFilePath(fileName);
         final file = File(filePath);
 
@@ -319,88 +316,92 @@ class _BulletinPageState extends State<BulletinPage> {
                 child: isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : bulletinData.isEmpty
-                    ? Image.asset(
-                  'assets/images/no_bulletin.png',
-                  fit: BoxFit.contain,
-                  height: MediaQuery
-                      .of(context)
-                      .size
-                      .height * 0.4,
-                )
-                    : RefreshIndicator(
-                  backgroundColor: Colors.white,
-                  color: Colors.black,
-                  onRefresh: _handleRefresh,
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    itemCount: bulletinData.length,
-                    itemBuilder: (context, index) {
-                      final item = bulletinData[index];
-                      final isVoiceNote = item['type'] == 'Voice';
-                      final voiceNoteUrl = item['voice_note_file'];
-                      final fileName = voiceNoteUrl
-                          ?.split('/')
-                          .last;
+                        ? Image.asset(
+                            'assets/images/no_bulletin.png',
+                            fit: BoxFit.contain,
+                            height: MediaQuery.of(context).size.height * 0.4,
+                          )
+                        : RefreshIndicator(
+                            backgroundColor: Colors.white,
+                            color: Colors.black,
+                            onRefresh: _handleRefresh,
+                            child: ListView.builder(
+                              controller: _scrollController,
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              itemCount: bulletinData.length,
+                              itemBuilder: (context, index) {
+                                final item = bulletinData[index];
+                                final isVoiceNote = item['type'] == 'Voice';
+                                final voiceNoteUrl = item['voice_note_file'];
+                                final fileName = voiceNoteUrl?.split('/').last;
 
-                      return CustomContainer(
-                        creatorName: item['creator_name'] ?? 'Unknown',
-                        updatedTime: item['updated_time'] ?? 'N/A',
-                        bulletinContent: isVoiceNote
-                            ? ''
-                            : item['bulletin_content'] ?? '',
-                        bulletinType: item['type'] ?? 'Text',
-                        taggedUsers: List<String>.from(item['users'] ?? []),
-                        extraWidget: isVoiceNote && voiceNoteUrl != null
-                            ? Row(
-                          children: [
-                            IconButton(
-                              icon: Icon(
-                                playingVoiceNote == voiceNoteUrl
-                                    ? Icons.pause
-                                    : Icons.play_arrow,
-                                color: playingVoiceNote == voiceNoteUrl
-                                    ? Colors.green
-                                    : Colors.red,
-                              ),
-                              onPressed: () {
-                                _togglePlayPause(
-                                    voiceNoteUrl, fileName!);
+                                return CustomContainer(
+                                  creatorName:
+                                      item['creator_name'] ?? 'Unknown',
+                                  updatedTime: item['updated_time'] ?? 'N/A',
+                                  bulletinContent: isVoiceNote
+                                      ? ''
+                                      : item['bulletin_content'] ?? '',
+                                  bulletinType: item['type'] ?? 'Text',
+                                  taggedUsers:
+                                      List<String>.from(item['users'] ?? []),
+                                  extraWidget: isVoiceNote &&
+                                          voiceNoteUrl != null
+                                      ? Row(
+                                          children: [
+                                            IconButton(
+                                              icon: Icon(
+                                                playingVoiceNote == voiceNoteUrl
+                                                    ? Icons.pause
+                                                    : Icons.play_arrow,
+                                                color: playingVoiceNote ==
+                                                        voiceNoteUrl
+                                                    ? Colors.green
+                                                    : Colors.red,
+                                              ),
+                                              onPressed: () {
+                                                _togglePlayPause(
+                                                    voiceNoteUrl, fileName!);
+                                              },
+                                            ),
+                                            if (playingVoiceNote ==
+                                                voiceNoteUrl)
+                                              Expanded(
+                                                child: AudioFileWaveforms(
+                                                  size: Size(
+                                                    MediaQuery.of(context)
+                                                            .size
+                                                            .width *
+                                                        0.6,
+                                                    40,
+                                                  ),
+                                                  playerController:
+                                                      playerController,
+                                                  waveformType:
+                                                      WaveformType.fitWidth,
+                                                  playerWaveStyle:
+                                                      const PlayerWaveStyle(
+                                                    fixedWaveColor:
+                                                        Color(0xFF545454),
+                                                    liveWaveColor:
+                                                        Color(0xFF545454),
+                                                  ),
+                                                ),
+                                              ),
+                                            const SizedBox(width: 10),
+                                            if (playingVoiceNote ==
+                                                voiceNoteUrl)
+                                              Text(
+                                                _formatDuration(
+                                                    playbackDuration),
+                                              ),
+                                          ],
+                                        )
+                                      : null,
+                                );
                               },
                             ),
-                            if (playingVoiceNote == voiceNoteUrl)
-                              Expanded(
-                                child: AudioFileWaveforms(
-                                  size: Size(
-                                    MediaQuery
-                                        .of(context)
-                                        .size
-                                        .width *
-                                        0.6,
-                                    40,
-                                  ),
-                                  playerController: playerController,
-                                  waveformType:
-                                  WaveformType.fitWidth,
-                                  playerWaveStyle:
-                                  const PlayerWaveStyle(
-                                    fixedWaveColor: Color(0xFF545454),
-                                    liveWaveColor: Color(0xFF545454),
-                                  ),
-                                ),
-                              ),
-                            const SizedBox(width: 10),
-                            if (playingVoiceNote == voiceNoteUrl)
-                              Text(
-                                _formatDuration(playbackDuration),
-                              ),
-                          ],
-                        )
-                            : null,
-                      );
-                    },
-                  ),
-                ),
+                          ),
               ),
             ],
           ),
@@ -437,38 +438,6 @@ void showDialogAtTopRight(BuildContext context, Function refreshCallback) {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Voice Note Option
-                    Material(
-                      color: Colors.transparent,
-                      child: ClipRect(
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(10),
-                          onTap: () {
-                            Navigator.pop(context);
-                            showVoiceNoteDialog(context, refreshCallback);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 20),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                SizedBox(width: 20),
-                                Icon(Icons.mic),
-                                SizedBox(width: 15), // Consistent spacing
-                                Text(
-                                  'Voice Note',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // Text Note Option
                     Material(
                       color: Colors.transparent,
                       child: ClipRect(
@@ -491,6 +460,38 @@ void showDialogAtTopRight(BuildContext context, Function refreshCallback) {
                                 SizedBox(width: 15), // Same spacing as above
                                 Text(
                                   'Text Note',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Divider(
+                      height: 1,
+                    ),
+                    Material(
+                      color: Colors.transparent,
+                      child: ClipRect(
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: () {
+                            Navigator.pop(context);
+                            showVoiceNoteDialog(context, refreshCallback);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 20),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                SizedBox(width: 20),
+                                Icon(Icons.mic),
+                                SizedBox(width: 15), // Consistent spacing
+                                Text(
+                                  'Voice Note',
                                   style: TextStyle(
                                     fontSize: 18,
                                   ),
