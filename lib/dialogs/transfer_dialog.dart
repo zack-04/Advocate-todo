@@ -57,7 +57,7 @@ class _TransferDialogState extends State<TransferDialog> {
           context: context,
           type: ToastificationType.error,
           title: 'Please select a user',
-          icon: Icons.error,
+          // icon: Icons.error,
           primaryColor: Colors.red,
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
@@ -85,7 +85,7 @@ class _TransferDialogState extends State<TransferDialog> {
             title: widget.buttonTextName == 'Switch'
                 ? 'Switched successfully!'
                 : 'Transferred successfully!',
-            icon: Icons.check,
+            // icon: Icons.check,
             primaryColor: Colors.green,
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,

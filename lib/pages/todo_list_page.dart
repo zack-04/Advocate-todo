@@ -530,7 +530,7 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
             context: context,
             type: ToastificationType.success,
             title: 'Todo created successfully!',
-            icon: Icons.check,
+            // icon: Icons.check,
             primaryColor: Colors.green,
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
@@ -543,7 +543,7 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
             context: context,
             type: ToastificationType.error,
             title: responseBody['status'],
-            icon: Icons.error,
+            // icon: Icons.error,
             primaryColor: Colors.red,
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
@@ -556,7 +556,7 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
           context: context,
           type: ToastificationType.error,
           title: 'An error occurred! Please check your connection.',
-          icon: Icons.error,
+          // icon: Icons.error,
           primaryColor: Colors.red,
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
@@ -678,6 +678,68 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
                               isDropdownOpen = !isDropdownOpen;
                             });
                           },
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) async {
+                        setState(() {
+                          selectedUserName = newValue;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  CustomButton(
+                    text: 'Create List',
+                    onPressed: isLoading
+                        ? null
+                        : () async {
+                            if (!formKey.currentState!.validate()) {
+                              return;
+                            }
+                            if (selectedUserId == null) {
+                              showCustomToastification(
+                                context: context,
+                                type: ToastificationType.error,
+                                title: 'Select a user',
+                                // icon: Icons.error,
+                                primaryColor: Colors.red,
+                                backgroundColor: Colors.white,
+                                foregroundColor: Colors.black,
+                              );
+                              return;
+                            }
+                            await todoCreation();
+                          },
+                  ),
+                  const SizedBox(height: 100),
+                ],
+              ),
+            ),
+
+            // Dropdown menu overlay
+            if (isDropdownOpen)
+              Positioned(
+                top: 170,
+                left: 0,
+                right: 0,
+                child: Material(
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Column(
+                    children: <String>['High', 'Medium', 'Low']
+                        .map((priority) => GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  selectedPriority = priority;
+                                  isDropdownOpen = false;
+                                });
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                  horizontal: 15,
+                                ),
+                                child: Row(
                           child: Container(
                             padding: const EdgeInsets.only(
                               top: 14,

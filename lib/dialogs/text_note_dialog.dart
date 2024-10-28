@@ -45,7 +45,7 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
         context: context,
         type: ToastificationType.error,
         title: 'User Not Logged In',
-        icon: Icons.error,
+        // icon: Icons.error,
         primaryColor: Colors.red,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -59,7 +59,7 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
         context: context,
         type: ToastificationType.error,
         title: 'Note Required',
-        icon: Icons.error,
+        // icon: Icons.error,
         primaryColor: Colors.red,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -106,7 +106,7 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
             context: context,
             type: ToastificationType.error,
             title: 'Failed To Create Bulletin',
-            icon: Icons.error,
+            // icon: Icons.error,
             primaryColor: Colors.red,
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
@@ -117,7 +117,7 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
           context: context,
           type: ToastificationType.error,
           title: 'Failed to Create Bulletin',
-          icon: Icons.error,
+          // icon: Icons.error,
           primaryColor: Colors.red,
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
@@ -128,7 +128,7 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
         context: context,
         type: ToastificationType.error,
         title: 'Server Error',
-        icon: Icons.error,
+        // icon: Icons.error,
         primaryColor: Colors.red,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -160,7 +160,7 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
                       const Text(
                         "Create Bulletin",
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -177,7 +177,18 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 20,),
+                const Padding(
+                  padding: EdgeInsets.only(left: 25),
+                  child: Text(
+                    "Bulletin Content",
+                    style: TextStyle(
+
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 25),
                   child: Container(

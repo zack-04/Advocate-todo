@@ -60,7 +60,7 @@ class _CaseListPageState extends State<CaseListPage> {
         context: context,
         type: ToastificationType.error,
         title: 'User not Logged in',
-        icon: Icons.error,
+        // icon: Icons.error,
         primaryColor: Colors.red,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -102,7 +102,7 @@ class _CaseListPageState extends State<CaseListPage> {
           context: context,
           type: ToastificationType.success,
           title: 'Failed To Load Cause List',
-          icon: Icons.check,
+          // icon: Icons.check,
           primaryColor: Colors.green,
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
@@ -118,7 +118,7 @@ class _CaseListPageState extends State<CaseListPage> {
         context: context,
         type: ToastificationType.success,
         title: 'Error Fetching Cause List',
-        icon: Icons.check,
+        // icon: Icons.check,
         primaryColor: Colors.green,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -146,6 +146,18 @@ class _CaseListPageState extends State<CaseListPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
+
+        child: Padding(
+          padding: const EdgeInsets.only(
+            left: 20,
+            right: 30,
+            top: 15,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
         child: Stack(
           children: [
             Image.asset(
@@ -176,6 +188,10 @@ class _CaseListPageState extends State<CaseListPage> {
                     child: Align(
                       alignment: Alignment.centerRight,
                       child: Container(
+                        height: 35,
+                        width: 120,
+                        decoration: BoxDecoration(
+                          color: Colors.black,
                         padding: const EdgeInsets.all(12),
                         height: 50,
                         width: 190,
@@ -185,6 +201,7 @@ class _CaseListPageState extends State<CaseListPage> {
                             color: Colors.black,
                             width: 1,
                           ),
+                          borderRadius: BorderRadius.circular(15),
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Center(
@@ -197,6 +214,66 @@ class _CaseListPageState extends State<CaseListPage> {
                                   DateFormat('dd-MMM-yyyy')
                                       .format(selectedDate),
                                   style: GoogleFonts.inter(
+                                    fontSize: 12.0,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              const Icon(
+                                Icons.arrow_drop_down_sharp,
+                                color: Colors.white,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 30),
+              isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : Expanded(
+                      child: RefreshIndicator(
+                        backgroundColor: const Color(0xFFFFFFFF),
+                        color: Colors.black,
+                        onRefresh: _fetchCauseList,
+                        child: causeList.isEmpty
+                            ? Center(
+                                child: Image.asset(
+                                  'assets/images/no_cause.png',
+                                  fit: BoxFit.cover,
+                                  height:
+                                      MediaQuery.of(context).size.height * 0.4,
+                                ),
+                              )
+                            : SingleChildScrollView(
+                                physics: const BouncingScrollPhysics(),
+                                child: Column(
+                                  children: [
+                                    for (var cause in causeList)
+                                      Padding(
+                                        padding:
+                                            const EdgeInsets.only(bottom: 10),
+                                        child: ImageContainer(
+                                          path: Uri.encodeFull(
+                                              cause['cause_file']),
+                                          fileName: cause['title'],
+                                          downloadUrl: Uri.encodeFull(
+                                              cause['cause_file']),
+                                          fileType: cause['file_type'],
+                                        ),
+                                      ),
+                                    const SizedBox(height: 130),
+                                  ],
+                                ),
+                              ),
+                      ),
+                    ),
+            ],
+          ),
                                     fontSize: 15.0,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -260,7 +337,7 @@ class _CaseListPageState extends State<CaseListPage> {
   }
 }
 
-class ImageContainer extends StatelessWidget {
+class ImageContainer extends StatefulWidget {
   final String path;
   final String fileName;
   final String downloadUrl;
@@ -274,17 +351,23 @@ class ImageContainer extends StatelessWidget {
     super.key,
   });
 
-  Future<void> downloadImage(
-      String url, String fileName, BuildContext context) async {
+  @override
+  _ImageContainerState createState() => _ImageContainerState();
+}
+
+class _ImageContainerState extends State<ImageContainer> {
+  bool isLoading = false;
+
+  Future<void> downloadImage(String url, String fileName, BuildContext context) async {
     try {
       final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
         // Define the download paths based on the fileType.
         String downloadPath;
-        if (fileType == "PDF") {
+        if (widget.fileType == "PDF") {
           downloadPath = '/storage/emulated/0/AdvocateTodo/PDF/';
-        } else if (fileType == "Word" || fileType == "docx") {
+        } else if (widget.fileType == "Word" || widget.fileType == "docx") {
           downloadPath = '/storage/emulated/0/AdvocateTodo/Documents/';
         } else {
           downloadPath = '/storage/emulated/0/AdvocateTodo/Images/';
@@ -314,7 +397,7 @@ class ImageContainer extends StatelessWidget {
           context: context,
           type: ToastificationType.success,
           title: 'Successfully Downloaded',
-          icon: Icons.check,
+          // icon: Icons.check,
           primaryColor: Colors.green,
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
@@ -335,9 +418,9 @@ class ImageContainer extends StatelessWidget {
   void _showDownloadNotification(String title, String filePath) async {
     // Set notification title based on fileType.
     String notificationTitle;
-    if (fileType == "PDF") {
+    if (widget.fileType == "PDF") {
       notificationTitle = 'PDF Downloaded';
-    } else if (fileType == "Word" || fileType == "docx") {
+    } else if (widget.fileType == "Word" || widget.fileType == "docx") {
       notificationTitle = 'Document Downloaded';
     } else {
       notificationTitle = 'Image Downloaded';
@@ -367,6 +450,7 @@ class ImageContainer extends StatelessWidget {
         NotificationDetails(android: androidDetails);
 
     int notificationId =
+    DateTime.now().millisecondsSinceEpoch.remainder(100000);
         DateTime.now().millisecondsSinceEpoch.remainder(100000);
 
     await flutterLocalNotificationsPlugin.show(
@@ -379,36 +463,46 @@ class ImageContainer extends StatelessWidget {
   }
 
   Future<void> requestPermission(BuildContext context) async {
+    setState(() {
+      isLoading = true;
+    });
+
     PermissionStatus status;
 
-    if (Platform.isAndroid && await _isAtLeastAndroid11()) {
-      status = await Permission.manageExternalStorage.status;
-    } else {
-      status = await Permission.storage.status;
-    }
-
-    if (status.isGranted) {
-      downloadImage(downloadUrl, fileName, context);
-    } else {
+    try {
       if (Platform.isAndroid && await _isAtLeastAndroid11()) {
-        status = await Permission.manageExternalStorage.request();
+        status = await Permission.manageExternalStorage.status;
       } else {
-        status = await Permission.storage.request();
+        status = await Permission.storage.status;
       }
 
       if (status.isGranted) {
-        downloadImage(downloadUrl, fileName, context);
+        await downloadImage(widget.downloadUrl, widget.fileName, context);
       } else {
-        showCustomToastification(
-          context: context,
-          type: ToastificationType.error,
-          title: 'Storage permission is required to download the image.',
-          icon: Icons.error,
-          primaryColor: Colors.red,
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-        );
+        if (Platform.isAndroid && await _isAtLeastAndroid11()) {
+          status = await Permission.manageExternalStorage.request();
+        } else {
+          status = await Permission.storage.request();
+        }
+
+        if (status.isGranted) {
+          await downloadImage(widget.downloadUrl, widget.fileName, context);
+        } else {
+          showCustomToastification(
+            context: context,
+            type: ToastificationType.error,
+            title: 'Storage permission is required to download the image.',
+            // icon: Icons.error,
+            primaryColor: Colors.red,
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+          );
+        }
       }
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
@@ -423,12 +517,13 @@ class ImageContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String previewImage;
-    if (fileType == "Image") {
-      previewImage = path; // Use the server path for images.
+    if (widget.fileType == "Image") {
+      previewImage = widget.path; // Use the server path for images.
     } else {
+      if (widget.fileType == "PDF") {
       if (fileType == "PDF") {
         previewImage = 'assets/images/pdf_image.png';
-      } else if (fileType == "Word" || fileType == "docx") {
+      } else if (widget.fileType == "Word" || widget.fileType == "docx") {
         previewImage = 'assets/images/word_image.jpg';
       } else {
         previewImage = 'assets/images/word_image.png';
@@ -444,19 +539,34 @@ class ImageContainer extends StatelessWidget {
         children: [
           Container(
             decoration: BoxDecoration(
+              color: Color(0xFFcfcfd2),
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(15),
-                topRight: Radius.circular(15),
+                topLeft: Radius.circular(30),
+                topRight: Radius.circular(30),
               ),
-              border: Border.all(color: Colors.black, width: 1),
+              border: Border.all(color: Color(0xFFcfcfd2), width: 1),
             ),
             child: ClipRRect(
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(15),
-                topRight: Radius.circular(15),
+                topLeft: Radius.circular(30),
+                topRight: Radius.circular(30),
               ),
-              child: fileType == "Image"
+              child: widget.fileType == "Image"
                   ? Image.network(
+                previewImage,
+                fit: BoxFit.cover,
+                height: 150,
+                width: double.infinity,
+              )
+                  : Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Image.asset(
+                  previewImage,
+                  fit: BoxFit.contain,
+                  height: 150,
+                  width: double.infinity,
+                ),
+              ),
                       previewImage, // For server-based images
                       fit: BoxFit.cover,
                       height: 200,
@@ -477,27 +587,42 @@ class ImageContainer extends StatelessWidget {
                 bottomLeft: Radius.circular(15),
                 bottomRight: Radius.circular(15),
               ),
-              border: Border.all(color: Colors.black, width: 1),
+              border: Border.all(color: Color(0xFFcfcfd2), width: 1),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
-                  fileName,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                IconButton(
-                  icon: const Icon(
-                    Icons.download,
-                    color: Colors.black,
+                Expanded(
+                  child: Text(
+                    widget.fileName,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    overflow: TextOverflow.ellipsis, // Optional: to prevent overflow.
                   ),
-                  onPressed: () {
-                    requestPermission(context);
-                  },
+                ),
+                SizedBox(
+                  height: 40,
+                  child: Center(
+                    child: isLoading
+                        ? CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.black87,
+                    )
+                        : IconButton(
+                      icon: const Icon(
+                        Icons.download,
+                        color: Colors.black87,
+                      ),
+                      onPressed: () {
+                        requestPermission(context);
+                      },
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
+
           const SizedBox(height: 10),
         ],
       ),

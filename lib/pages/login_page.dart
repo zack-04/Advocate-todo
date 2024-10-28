@@ -61,7 +61,7 @@ class _LoginPageState extends State<LoginPage> {
             context: context,
             type: ToastificationType.success,
             title: 'Logged in successfully!',
-            icon: Icons.check,
+            // icon: Icons.check,
             primaryColor: Colors.green,
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
@@ -80,7 +80,7 @@ class _LoginPageState extends State<LoginPage> {
             context: context,
             type: ToastificationType.error,
             title: 'Wrong Credentials!',
-            icon: Icons.error,
+            // icon: Icons.error,
             primaryColor: Colors.red,
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
@@ -91,7 +91,7 @@ class _LoginPageState extends State<LoginPage> {
           context: context,
           type: ToastificationType.error,
           title: 'Server error! Please try again.',
-          icon: Icons.error,
+          // icon: Icons.error,
           primaryColor: Colors.red,
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
@@ -102,7 +102,7 @@ class _LoginPageState extends State<LoginPage> {
         context: context,
         type: ToastificationType.error,
         title: 'Please check your connection.',
-        icon: Icons.error,
+        // icon: Icons.error,
         primaryColor: Colors.red,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -141,7 +141,7 @@ class _LoginPageState extends State<LoginPage> {
             context: context,
             type: ToastificationType.error,
             title: 'Wrong Credentials!',
-            icon: Icons.error,
+            // icon: Icons.error,
             primaryColor: Colors.red,
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
@@ -152,7 +152,7 @@ class _LoginPageState extends State<LoginPage> {
           context: context,
           type: ToastificationType.error,
           title: 'Server error! Please try again.',
-          icon: Icons.error,
+          // icon: Icons.error,
           primaryColor: Colors.red,
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
@@ -163,7 +163,7 @@ class _LoginPageState extends State<LoginPage> {
         context: context,
         type: ToastificationType.error,
         title: 'Please check your connection.',
-        icon: Icons.error,
+        // icon: Icons.error,
         primaryColor: Colors.red,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -184,7 +184,6 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -212,7 +211,7 @@ class _LoginPageState extends State<LoginPage> {
                             Text(
                               "Mobile No",
                               style: GoogleFonts.inter(
-                                fontSize: 20.0,
+                                fontSize: 18,
                                 fontWeight: FontWeight.w400,
                               ),
                             ),
@@ -271,7 +270,7 @@ class _LoginPageState extends State<LoginPage> {
                             Text(
                               "Password",
                               style: GoogleFonts.inter(
-                                fontSize: 20.0,
+                                fontSize: 18.0,
                                 fontWeight: FontWeight.w400,
                               ),
                             ),
@@ -326,6 +325,18 @@ class _LoginPageState extends State<LoginPage> {
             ),
             Padding(
               padding: const EdgeInsets.only(bottom: 50, left: 30, right: 30),
+              child: isLoading
+                  ? const CircularProgressIndicator()
+                  : CustomButton(
+                      text: 'Login',
+                      onPressed: () {
+                        FocusScope.of(context).unfocus();
+                        if (!formKey.currentState!.validate()) {
+                          return;
+                        }
+                        loginUser(mobController.text, passController.text);
+                      },
+                    ),
               child: CustomButton(
                 widget: Text(
                   'Login',
