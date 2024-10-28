@@ -14,7 +14,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:toastification/toastification.dart';
 
-import '../const.dart';
+import '../utils/const.dart';
 import '../main.dart';
 import '../widgets/toast_message.dart';
 
@@ -146,102 +146,114 @@ class _CaseListPageState extends State<CaseListPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.only(
-            left: 20,
-            right: 30,
-            top: 15,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Cause List",
-                style: GoogleFonts.inter(
-                  fontSize: 25.0,
-                  fontWeight: FontWeight.w700,
-                ),
+        child: Stack(
+          children: [
+            Image.asset(
+              'assets/images/abstractBg.jpeg',
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+            ),
+            Padding(
+              padding: const EdgeInsets.only(
+                left: 20,
+                right: 30,
+                top: 15,
               ),
-              const SizedBox(height: 20),
-              GestureDetector(
-                onTap: () => _selectDate(context),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    height: 50,
-                    width: 190,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(
-                        color: Colors.black,
-                        width: 1,
-                      ),
-                      borderRadius: BorderRadius.circular(30),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Cause List",
+                    style: GoogleFonts.inter(
+                      fontSize: 25.0,
+                      fontWeight: FontWeight.w700,
                     ),
-                    child: Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(left: 10),
-                            child: Text(
-                              DateFormat('dd-MMM-yyyy').format(selectedDate),
-                              style: GoogleFonts.inter(
-                                fontSize: 15.0,
-                                fontWeight: FontWeight.w500,
+                  ),
+                  const SizedBox(height: 20),
+                  GestureDetector(
+                    onTap: () => _selectDate(context),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        height: 50,
+                        width: 190,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(
+                            color: Colors.black,
+                            width: 1,
+                          ),
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(left: 10),
+                                child: Text(
+                                  DateFormat('dd-MMM-yyyy')
+                                      .format(selectedDate),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 15.0,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
                               ),
-                            ),
+                              const Icon(Icons.arrow_drop_down_sharp),
+                            ],
                           ),
-                          const Icon(Icons.arrow_drop_down_sharp),
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 30),
-              isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : Expanded(
-                child: RefreshIndicator(
-                  backgroundColor: const Color(0xFFFFFFFF),
-                  color: Colors.black,
-                  onRefresh: _fetchCauseList,
-                  child: causeList.isEmpty
-                      ? Center(
-                    child: Image.asset(
-                      'assets/images/no_cause.png',
-                      fit: BoxFit.cover,
-                      height:
-                      MediaQuery.of(context).size.height * 0.4,
-                    ),
-                  )
-                      : SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Column(
-                      children: [
-                        for (var cause in causeList)
-                          Padding(
-                            padding:
-                            const EdgeInsets.only(bottom: 10),
-                            child: ImageContainer(
-                              path: Uri.encodeFull(
-                                  cause['cause_file']),
-                              fileName: cause['title'],
-                              downloadUrl: Uri.encodeFull(
-                                  cause['cause_file']),
-                              fileType: cause['file_type'],
-                            ),
+                  const SizedBox(height: 30),
+                  isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : Expanded(
+                          child: RefreshIndicator(
+                            backgroundColor: const Color(0xFFFFFFFF),
+                            color: Colors.black,
+                            onRefresh: _fetchCauseList,
+                            child: causeList.isEmpty
+                                ? Center(
+                                    child: Image.asset(
+                                      'assets/images/no_cause.png',
+                                      fit: BoxFit.cover,
+                                      height:
+                                          MediaQuery.of(context).size.height *
+                                              0.4,
+                                    ),
+                                  )
+                                : SingleChildScrollView(
+                                    physics: const BouncingScrollPhysics(),
+                                    child: Column(
+                                      children: [
+                                        for (var cause in causeList)
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                                bottom: 10),
+                                            child: ImageContainer(
+                                              path: Uri.encodeFull(
+                                                  cause['cause_file']),
+                                              fileName: cause['title'],
+                                              downloadUrl: Uri.encodeFull(
+                                                  cause['cause_file']),
+                                              fileType: cause['file_type'],
+                                            ),
+                                          ),
+                                        const SizedBox(height: 130),
+                                      ],
+                                    ),
+                                  ),
                           ),
-                        const SizedBox(height: 130),
-                      ],
-                    ),
-                  ),
-                ),
+                        ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -320,7 +332,6 @@ class ImageContainer extends StatelessWidget {
     }
   }
 
-
   void _showDownloadNotification(String title, String filePath) async {
     // Set notification title based on fileType.
     String notificationTitle;
@@ -334,7 +345,7 @@ class ImageContainer extends StatelessWidget {
 
     // Set style information
     final BigPictureStyleInformation bigPictureStyleInformation =
-    BigPictureStyleInformation(
+        BigPictureStyleInformation(
       FilePathAndroidBitmap(filePath),
       contentTitle: notificationTitle,
       summaryText: title,
@@ -343,7 +354,7 @@ class ImageContainer extends StatelessWidget {
 
     // Define Android notification details.
     final AndroidNotificationDetails androidDetails =
-    AndroidNotificationDetails(
+        AndroidNotificationDetails(
       'download_channel',
       'File Downloads',
       channelDescription: 'Notifications for file downloads',
@@ -353,9 +364,10 @@ class ImageContainer extends StatelessWidget {
     );
 
     final NotificationDetails notificationDetails =
-    NotificationDetails(android: androidDetails);
+        NotificationDetails(android: androidDetails);
 
-    int notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
+    int notificationId =
+        DateTime.now().millisecondsSinceEpoch.remainder(100000);
 
     await flutterLocalNotificationsPlugin.show(
       notificationId,
@@ -365,7 +377,6 @@ class ImageContainer extends StatelessWidget {
       payload: filePath,
     );
   }
-
 
   Future<void> requestPermission(BuildContext context) async {
     PermissionStatus status;
@@ -411,12 +422,10 @@ class ImageContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     String previewImage;
     if (fileType == "Image") {
       previewImage = path; // Use the server path for images.
     } else {
-
       if (fileType == "PDF") {
         previewImage = 'assets/images/pdf_image.png';
       } else if (fileType == "Word" || fileType == "docx") {
@@ -425,8 +434,6 @@ class ImageContainer extends StatelessWidget {
         previewImage = 'assets/images/word_image.png';
       }
     }
-
-
 
     return GestureDetector(
       onTap: () {
@@ -450,17 +457,17 @@ class ImageContainer extends StatelessWidget {
               ),
               child: fileType == "Image"
                   ? Image.network(
-                previewImage,  // For server-based images
-                fit: BoxFit.cover,
-                height: 200,
-                width: double.infinity,
-              )
+                      previewImage, // For server-based images
+                      fit: BoxFit.cover,
+                      height: 200,
+                      width: double.infinity,
+                    )
                   : Image.asset(
-                previewImage,
-                fit: BoxFit.cover,
-                height: 200,
-                width: double.infinity,
-              ),
+                      previewImage,
+                      fit: BoxFit.cover,
+                      height: 200,
+                      width: double.infinity,
+                    ),
             ),
           ),
           Container(
@@ -497,4 +504,3 @@ class ImageContainer extends StatelessWidget {
     );
   }
 }
-

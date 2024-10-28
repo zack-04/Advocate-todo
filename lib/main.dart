@@ -1,6 +1,12 @@
+import 'dart:convert';
+
+import 'package:advocate_todo_list/utils/logger.dart';
 import 'package:advocate_todo_list/methods/firebase_api.dart';
 import 'package:advocate_todo_list/methods/methods.dart';
+import 'package:advocate_todo_list/pages/bulletin_page.dart';
+import 'package:advocate_todo_list/pages/cause_list_page.dart';
 import 'package:advocate_todo_list/pages/home_page.dart';
+import 'package:advocate_todo_list/pages/todo_list_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +24,8 @@ import 'package:advocate_todo_list/pages/login_page.dart';
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
 
@@ -28,8 +36,10 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Logger().init();
   await Firebase.initializeApp();
   await FirebaseApi().initNotifications();
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   await Permission.notification.request();
   await Permission.ignoreBatteryOptimizations.request();
 
@@ -39,7 +49,6 @@ void main() async {
 
   tz.initializeTimeZones();
   tz.setLocalLocation(tz.getLocation('Asia/Kolkata'));
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   const AndroidInitializationSettings initializationSettingsAndroid =
       AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -75,13 +84,12 @@ void main() async {
     return path.endsWith('.doc') || path.endsWith('.docx');
   }
 
-// Unified function to open files with fallback
   Future<void> openFileWithFallback(String filePath) async {
     final result = await OpenFilex.open(filePath);
     debugPrint('Open file result: $result');
     if (result.type != ResultType.done) {
       debugPrint('File could not be opened, navigating to HomePage');
-      MyApp.navigatorKey.currentState?.push(
+      navigatorKey.currentState?.push(
         MaterialPageRoute(
           builder: (context) => const HomePage(),
         ),
@@ -89,56 +97,184 @@ void main() async {
     }
   }
 
-// Modified notification handler
   await flutterLocalNotificationsPlugin.initialize(
     initializationSettings,
     onDidReceiveNotificationResponse: (response) async {
-      if (response.payload != null) {
-        String payload = response.payload!;
+      Map<String, dynamic> data = jsonDecode(response.payload!);
+      final type = data['type'];
+      final layout = data['layout'];
+      final todoId = data['todo_id'];
 
-        // Check file type and open accordingly
+      debugPrint('Type: $type');
+      debugPrint('Layout : $layout');
+      debugPrint('Todo id : $todoId');
+
+      if (type == 'Bulletin') {
+        debugPrint('Data in : ${response.payload}');
+        navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          '/home',
+          (route) => false,
+          arguments: {'tabIndex': 1},
+        );
+      } else if (type == 'Cause List') {
+        debugPrint('Data in cause : ${response.payload}');
+        navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          '/home',
+          (route) => false,
+          arguments: {'tabIndex': 2},
+        );
+      } else if (layout == 'details') {
+        // Navigate to TodoListPage with 'Self' tab (index 0) and pass todoId
+        navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          '/home',
+          (route) => false,
+          arguments: {'tabIndex': 0, 'todoTabIndex': 0},
+        );
+        todoDetailsApi(
+          navigatorKey.currentContext!,
+          todoId,
+          () {},
+          'Transfer',
+        );
+      } else if (layout == 'approval') {
+        // Navigate to TodoListPage with 'Assigned' tab (index 1) and pass todoId
+        navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          '/home',
+          (route) => false,
+          arguments: {'tabIndex': 0, 'todoTabIndex': 1},
+        );
+        todoDetailsApi(
+          navigatorKey.currentContext!,
+          todoId,
+          () {},
+          'AcceptDeny',
+        );
+      } else {
+        String payload = response.payload!;
         if (isImagePath(payload) || isPdfPath(payload) || isWordPath(payload)) {
           openFileWithFallback(payload);
-          debugPrint('Notification clicked: File opened from payload: $payload');
+          debugPrint('Notification clicked: File opened: $payload');
         } else {
-          // Default behavior for other types
-          MyApp.navigatorKey.currentState?.push(
+          navigatorKey.currentState?.push(
             MaterialPageRoute(
               builder: (context) => const HomePage(),
             ),
           );
           todoDetailsApi(
-            MyApp.navigatorKey.currentContext!,
+            navigatorKey.currentContext!,
             payload,
-                () {},
+            () {},
             'Transfer',
           );
-          debugPrint('Notification clicked: Navigated to HomePage with payload: $payload');
+          debugPrint('Notification clicked: Navigated to HomePage: $payload');
         }
       }
     },
     onDidReceiveBackgroundNotificationResponse: backgroundNotificationHandler,
   );
 
-
   await createNotificationChannel();
 
-  runApp(MyApp(
-    payload: payload,
-  ));
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    RemoteNotification? notification = message.notification;
+    AndroidNotification? android = message.notification?.android;
+    debugPrint('Message: $message');
+    debugPrint('Notification: ${message.notification}');
+
+    if (notification != null && android != null) {
+      String payload = jsonEncode(message.data);
+      debugPrint('Title: ${notification.title}');
+      debugPrint('Body: ${notification.body}');
+      debugPrint('Data: ${message.data}');
+      debugPrint('Encoded data: $payload');
+      flutterLocalNotificationsPlugin.show(
+        notification.hashCode,
+        notification.title,
+        notification.body,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            '@mipmap/ic_launcher',
+            'AdvocateTodo',
+            channelDescription: 'AdvocateTodo notification channel',
+            importance: Importance.max,
+            priority: Priority.high,
+          ),
+        ),
+        payload: payload,
+      );
+    }
+  });
+
+  FirebaseMessaging.onMessageOpenedApp.listen(onNotificationClick);
+
+  final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+  if (initialMessage != null) {
+    Logger().log('Initial = ${initialMessage.data}');
+    runApp(MyApp(message: initialMessage));
+  }
+
+  runApp(MyApp(payload: payload));
+}
+
+void onNotificationClick(RemoteMessage message) {
+  final type = message.data['type'];
+  final layout = message.data['layout'];
+  final todoId = message.data['todo_id'];
+
+  if (type == 'Bulletin') {
+    // Navigate to HomePage with tab 1 selected
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/home',
+      (route) => false,
+      arguments: {'tabIndex': 1},
+    );
+  } else if (type == 'Cause List') {
+    // Navigate to HomePage with tab 2 selected
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/home',
+      (route) => false,
+      arguments: {'tabIndex': 2},
+    );
+  } else if (layout == 'details') {
+    // Navigate to TodoListPage with 'Self' tab (index 0) and pass todoId
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/home',
+      (route) => false,
+      arguments: {'tabIndex': 0, 'todoTabIndex': 0},
+    );
+    todoDetailsApi(
+      navigatorKey.currentContext!,
+      todoId,
+      () {},
+      'Transfer',
+    );
+  } else if (layout == 'approval') {
+    // Navigate to TodoListPage with 'Assigned' tab (index 1) and pass todoId
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/home',
+      (route) => false,
+      arguments: {'tabIndex': 0, 'todoTabIndex': 1},
+    );
+    todoDetailsApi(
+      navigatorKey.currentContext!,
+      todoId,
+      () {},
+      'AcceptDeny',
+    );
+  }
 }
 
 @pragma('vm:entry-point')
 void backgroundNotificationHandler(NotificationResponse response) async {
   if (response.payload != null) {
     debugPrint('Notification clicked in the background : ${response.payload}');
-    MyApp.navigatorKey.currentState?.push(
+    navigatorKey.currentState?.push(
       MaterialPageRoute(
         builder: (context) => const HomePage(),
       ),
     );
     todoDetailsApi(
-      MyApp.navigatorKey.currentContext!,
+      navigatorKey.currentContext!,
       response.payload!,
       () {},
       'Transfer',
@@ -159,13 +295,13 @@ Future<void> requestExactAlarmsPermission() async {
 }
 
 class MyApp extends StatelessWidget {
-  static final GlobalKey<NavigatorState> navigatorKey =
-      GlobalKey<NavigatorState>();
   final String? payload;
+  final RemoteMessage? message;
 
   const MyApp({
     super.key,
     this.payload,
+    this.message,
   });
 
   Future<bool> isLoggedInOrNot() async {
@@ -179,16 +315,28 @@ class MyApp extends StatelessWidget {
       title: 'Advocate Todo List',
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
+      onGenerateRoute: (RouteSettings settings) {
+        if (settings.name == '/home') {
+          final args = settings.arguments as Map<String, dynamic>? ?? {};
+          return MaterialPageRoute(
+            builder: (_) => HomePage(
+              initialTabIndex: args['tabIndex'] ?? 0,
+              todoTabIndex: args['todoTabIndex'] ?? 0,
+            ),
+          );
+        }
+        return null;
+      },
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
       home: Builder(
         builder: (context) {
-          if (payload != null) {
+          if (payload != null || message != null) {
             debugPrint('Inside : $payload');
             Future.delayed(Duration.zero, () {
-              _onNotificationClick(context, payload!);
+              _onNotificationClick(context, payload!, message!);
             });
           }
 
@@ -211,18 +359,39 @@ class MyApp extends StatelessWidget {
   }
 }
 
-void _onNotificationClick(BuildContext context, String payload) async {
-  debugPrint('Notification clicked from out : $payload');
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => const HomePage(),
-    ),
-  );
-  todoDetailsApi(
-    context,
-    payload,
-    () {},
-    'Transfer',
-  );
+void _onNotificationClick(
+    BuildContext context, String payload, RemoteMessage message) async {
+  final type = message.data['type'];
+  final layout = message.data['layout'];
+
+  if (type == 'Bulletin') {
+    Logger().log('Bull Payload = $payload');
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/home',
+      (route) => false,
+      arguments: {'tabIndex': 1},
+    );
+  } else if (type == 'Cause List') {
+    Logger().log('Cause Payload = $payload');
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/home',
+      (route) => false,
+      arguments: {'tabIndex': 2},
+    );
+  } else {
+    debugPrint('Notification clicked from out : $payload');
+    Logger().log('Normal Payload = $payload');
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const HomePage(),
+      ),
+    );
+    todoDetailsApi(
+      context,
+      payload,
+      () {},
+      'Transfer',
+    );
+  }
 }

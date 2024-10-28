@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:toastification/toastification.dart';
 
-import '../const.dart';
+import '../utils/const.dart';
 import '../widgets/toast_message.dart';
 
 class BulletinDialog extends StatefulWidget {

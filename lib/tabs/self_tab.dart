@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:advocate_todo_list/const.dart';
+import 'package:advocate_todo_list/utils/const.dart';
 import 'package:advocate_todo_list/dialogs/info_dialog.dart';
 import 'package:advocate_todo_list/model/todo_list_model.dart';
 import 'package:drag_and_drop_lists/drag_and_drop_lists.dart';
@@ -34,6 +34,15 @@ class _SelfTabState extends State<SelfTab> {
     super.initState();
     _buildLists();
   }
+
+  // @override
+  // void didUpdateWidget(SelfTab oldWidget) {
+  //   super.didUpdateWidget(oldWidget);
+  //   if (widget.toDoResponse != oldWidget.toDoResponse) {
+  //     debugPrint('Updated');
+  //     _buildLists();
+  //   }
+  // }
 
   Future<void> changeWorkStatus(
     String todoId,
@@ -141,9 +150,12 @@ class _SelfTabState extends State<SelfTab> {
       _lists.add(
         DragAndDropList(
           decoration: const BoxDecoration(
-            color: Colors.white,
+            color: Color(0xFFEDF5F8),
           ),
-          header: _buildListHeader(title, _getListColor(title)),
+          header: Container(
+            color: const Color(0xFFEDF5F8),
+            child: _buildListHeader(title, _getListColor(title)),
+          ),
           children: items,
           contentsWhenEmpty: const Text('No items found'),
         ),
@@ -201,7 +213,7 @@ class _SelfTabState extends State<SelfTab> {
           gradient: LinearGradient(
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
-            colors: [color, Colors.white],
+            colors: [color, const Color(0xFFEDF5F8)],
             stops: const [
               0.0,
               0.8,
@@ -227,7 +239,7 @@ class _SelfTabState extends State<SelfTab> {
     void Function()? onTap,
   ) {
     return Material(
-      color: Colors.white,
+      color: const Color(0xFFEDF5F8),
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -290,6 +302,7 @@ class _SelfTabState extends State<SelfTab> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      const SizedBox(width: 20),
                     ],
                   ),
                 ),
@@ -304,63 +317,77 @@ class _SelfTabState extends State<SelfTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: RefreshIndicator(
-          onRefresh: widget.onRefresh,
-          color: Colors.black,
-          backgroundColor: Colors.white,
-          child: DragAndDropLists(
-            children: _lists,
-            onItemReorder: _onItemReorder,
-            onListReorder: (oldListIndex, newListIndex) {},
-            listPadding: const EdgeInsets.symmetric(vertical: 8),
-            itemDivider: const Divider(thickness: 0.5, height: 0.5),
-            listDecoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            contentsWhenEmpty: Column(
-              children: [
-                Image.asset(
-                  'assets/images/emptyList.jpeg',
-                  height: 200,
-                  width: 200,
-                  fit: BoxFit.cover,
+      backgroundColor: const Color(0xFFEDF5F8),
+      body: Stack(
+        children: [
+          Image.asset(
+            'assets/images/abstractBg.jpeg',
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: RefreshIndicator(
+              onRefresh: widget.onRefresh,
+              color: Colors.black,
+              backgroundColor: Colors.white,
+              child: DragAndDropLists(
+                children: _lists,
+                onItemReorder: _onItemReorder,
+                onListReorder: (oldListIndex, newListIndex) {},
+                listPadding: const EdgeInsets.symmetric(vertical: 8),
+                itemDivider: const Divider(thickness: 0.5, height: 0.5),
+                listDecoration: BoxDecoration(
+                  color: const Color(0xFFEDF5F8),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const SizedBox(height: 10),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 50),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 40,
-                    child: TextButton(
-                      onPressed: widget.toggleCreateForm,
-                      style: ButtonStyle(
-                        backgroundColor: WidgetStateProperty.all<Color>(
-                          Colors.blue,
-                        ),
-                        shape: WidgetStateProperty.all<RoundedRectangleBorder>(
-                          RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8.0),
+                listInnerDecoration: const BoxDecoration(
+                  color: Color(0xFFEDF5F8),
+                ),
+                contentsWhenEmpty: Column(
+                  children: [
+                    Image.asset(
+                      'assets/images/emptyList.png',
+                      height: 200,
+                      width: 200,
+                      fit: BoxFit.cover,
+                    ),
+                    const SizedBox(height: 10),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 50),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 40,
+                        child: TextButton(
+                          onPressed: widget.toggleCreateForm,
+                          style: ButtonStyle(
+                            backgroundColor: WidgetStateProperty.all<Color>(
+                              Colors.blue,
+                            ),
+                            shape:
+                                WidgetStateProperty.all<RoundedRectangleBorder>(
+                              RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8.0),
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            'Create ToDo',
+                            style: GoogleFonts.inter(
+                              fontSize: 15,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
-                      child: Text(
-                        'Create ToDo',
-                        style: GoogleFonts.inter(
-                          fontSize: 15,
-                          color: Colors.white,
-                        ),
-                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -382,6 +409,7 @@ class _SelfTabState extends State<SelfTab> {
       String todoId = (movedItem as CustomDragAndDropItem).todoId;
       debugPrint('Dragged todoId = $todoId');
       changeWorkStatus(todoId, newListIndex, todoIdsOrder);
+      widget.onTransfer();
       _recalculateNumbers();
     });
 

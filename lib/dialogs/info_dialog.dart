@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:advocate_todo_list/const.dart';
+import 'package:advocate_todo_list/utils/const.dart';
 import 'package:advocate_todo_list/dialogs/transfer_dialog.dart';
 import 'package:advocate_todo_list/methods/methods.dart';
 import 'package:advocate_todo_list/model/todo_details_model.dart';
@@ -215,10 +215,51 @@ class _InfoDialogState extends State<InfoDialog> {
     }
   }
 
+  Future<void> todoPendingApi() async {
+    String? empId = await getLoginUserId();
+    debugPrint('empid: $empId');
+    const String url = ApiConstants.todoPendingApi;
+
+    final request = http.MultipartRequest('POST', Uri.parse(url))
+      ..fields['enc_key'] = encKey
+      ..fields['emp_id'] = empId!
+      ..fields['todo_id'] = widget.toDoDetailsResponse.data.todoId!
+      ..fields['todo_status'] = widget.toDoDetailsResponse.data.todoStatus!;
+
+    try {
+      final response = await request.send();
+      if (response.statusCode == 200) {
+        final responseBody = await response.stream.bytesToString();
+        debugPrint('Pending api response: $responseBody');
+
+        if (mounted) {
+          showCustomToastification(
+            context: context,
+            type: ToastificationType.success,
+            title: 'Moved to pending',
+            icon: Icons.check,
+            primaryColor: Colors.green,
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+          );
+        }
+      } else {
+        debugPrint('Failed: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Error id: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final data = widget.toDoDetailsResponse.data;
     final date = data.dateDiff;
+    final showSwitch = data.handlingPersonEnc! == empId || userRole == 'Admin';
+    final move = data.todoStatus! != 'Pending' && userRole == 'Admin';
+    final isVisible = widget.whichButtonToShow == 'Transfer' ||
+        widget.whichButtonToShow == 'Buzz';
+
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
@@ -248,7 +289,7 @@ class _InfoDialogState extends State<InfoDialog> {
                     ),
                   ),
                   const Spacer(),
-                  widget.whichButtonToShow == 'Transfer'
+                  isVisible
                       ? PopupMenuButton<String>(
                           padding: const EdgeInsets.all(0),
                           tooltip: '',
@@ -259,7 +300,7 @@ class _InfoDialogState extends State<InfoDialog> {
                           ),
                           position: PopupMenuPosition.under,
                           constraints: const BoxConstraints(
-                            minWidth: 150,
+                            maxWidth: 190,
                           ),
                           style: const ButtonStyle(),
                           onSelected: (String value) async {
@@ -276,6 +317,9 @@ class _InfoDialogState extends State<InfoDialog> {
                               case 'Buzz':
                                 await todoBuzzApi();
                                 break;
+                              case 'Move':
+                                await todoPendingApi();
+                                break;
                               case 'Close':
                                 break;
                             }
@@ -291,10 +335,13 @@ class _InfoDialogState extends State<InfoDialog> {
                               height: 40,
                               child: Row(
                                 children: [
-                                  const Icon(
-                                    Icons.alarm,
-                                    size: 20,
-                                    color: Color(0xFF545454),
+                                  const Padding(
+                                    padding: EdgeInsets.only(top: 3),
+                                    child: Icon(
+                                      Icons.alarm,
+                                      size: 18,
+                                      color: Color(0xFF545454),
+                                    ),
                                   ),
                                   const SizedBox(width: 10),
                                   Text(
@@ -306,17 +353,20 @@ class _InfoDialogState extends State<InfoDialog> {
                                 ],
                               ),
                             ),
-                            if (userRole == 'Admin') ...[
+                            if (showSwitch) ...[
                               PopupMenuItem<String>(
                                 value: 'Switch',
                                 height: 40,
                                 child: Row(
                                   children: [
-                                    SvgPicture.asset(
-                                      'assets/icons/arrow.svg',
-                                      height: 17,
-                                      width: 17,
-                                      //color: const Color(0xFF545454),
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 3),
+                                      child: SvgPicture.asset(
+                                        'assets/icons/arrow.svg',
+                                        height: 16,
+                                        width: 16,
+                                        //color: const Color(0xFF545454),
+                                      ),
                                     ),
                                     const SizedBox(width: 12),
                                     Text(
@@ -334,11 +384,14 @@ class _InfoDialogState extends State<InfoDialog> {
                               height: 40,
                               child: Row(
                                 children: [
-                                  SvgPicture.asset(
-                                    'assets/icons/buzz.svg',
-                                    height: 17,
-                                    width: 17,
-                                    color: const Color(0xFF545454),
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 3),
+                                    child: SvgPicture.asset(
+                                      'assets/icons/buzz.svg',
+                                      height: 17,
+                                      width: 17,
+                                      color: const Color(0xFF545454),
+                                    ),
                                   ),
                                   const SizedBox(width: 14),
                                   Text(
@@ -350,6 +403,31 @@ class _InfoDialogState extends State<InfoDialog> {
                                 ],
                               ),
                             ),
+                            if (move) ...[
+                              PopupMenuItem<String>(
+                                value: 'Move',
+                                height: 40,
+                                child: Row(
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 3),
+                                      child: SvgPicture.asset(
+                                        'assets/icons/move.svg',
+                                        height: 16,
+                                        width: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      'Move to Pending',
+                                      style: GoogleFonts.inter(
+                                        color: const Color(0xFF545454),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                             PopupMenuItem<String>(
                               value: 'Close',
                               padding: const EdgeInsets.all(0),
@@ -431,7 +509,7 @@ class _InfoDialogState extends State<InfoDialog> {
                     'Transfer To:',
                     data.transferPersonName == null
                         ? '-'
-                        : '${data.transferPersonName} (${data.todoStatus})',
+                        : '${data.transferPersonName} (${data.transferStatus})',
                   ),
             _rowWidget('Handling By:', data.handlingPersonName!),
             const SizedBox(height: 15),
@@ -586,6 +664,7 @@ Widget _buildAcceptDenyButtons(
 }
 
 void showLoaderDialog(BuildContext context) {
+  debugPrint('Loading');
   showDialog(
     context: context,
     barrierDismissible: false,

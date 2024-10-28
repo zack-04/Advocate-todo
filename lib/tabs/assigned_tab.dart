@@ -6,11 +6,9 @@ class AssignedTab extends StatelessWidget {
   const AssignedTab({
     super.key,
     this.toDoResponse,
-    required this.onRefresh,
     required this.onTransfer,
   });
   final ToDoResponse? toDoResponse;
-  final Future<void> Function() onRefresh;
   final VoidCallback onTransfer;
 
   @override
@@ -30,41 +28,46 @@ class AssignedTab extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-        child: RefreshIndicator(
-          onRefresh: onRefresh,
-          color: Colors.black,
-          backgroundColor: Colors.white,
-          child: toDoResponse!.data!.isEmpty
-              ? _buildEmptyState()
-              : Stack(
-                  children: [
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      itemCount: toDoResponse!.data!.length,
-                      itemBuilder: (context, index) {
-                        final data = toDoResponse!.data![index];
-                        return _listItem(
-                          data.content!,
-                          index + 1,
-                          getPriorityColor(data.priority!),
-                          context,
-                          () {
-                            todoDetailsApi(
-                              context,
-                              data.todoId!,
-                              onTransfer,
-                              'AcceptDeny',
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ],
-                ),
-        ),
+      body: Stack(
+        children: [
+          Image.asset(
+            'assets/images/abstractBg.jpeg',
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            child: toDoResponse!.data!.isEmpty
+                ? _buildEmptyState()
+                : Stack(
+                    children: [
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: toDoResponse!.data!.length,
+                        itemBuilder: (context, index) {
+                          final data = toDoResponse!.data![index];
+                          return _listItem(
+                            data.content!,
+                            index + 1,
+                            getPriorityColor(data.priority!),
+                            context,
+                            () {
+                              todoDetailsApi(
+                                context,
+                                data.todoId!,
+                                onTransfer,
+                                'AcceptDeny',
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+          ),
+        ],
       ),
     );
   }
@@ -72,15 +75,14 @@ class AssignedTab extends StatelessWidget {
 
 Widget _buildEmptyState() {
   return ListView(
-    children: const [
-      SizedBox(height: 300),
+    children: [
+      const SizedBox(height: 150),
       Center(
-        child: Padding(
-          padding: EdgeInsets.only(bottom: 50),
-          child: Text(
-            'No assigned task',
-            style: TextStyle(fontSize: 20),
-          ),
+        child: Image.asset(
+          'assets/images/emptyList.png',
+          height: 200,
+          width: 200,
+          fit: BoxFit.cover,
         ),
       ),
     ],
@@ -148,6 +150,7 @@ Widget _listItem(
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 20),
             ],
           ),
         ),

@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:toastification/toastification.dart';
 
-import '../const.dart';
+import '../utils/const.dart';
 import '../widgets/toast_message.dart';
 
 class UserSearch extends StatefulWidget {

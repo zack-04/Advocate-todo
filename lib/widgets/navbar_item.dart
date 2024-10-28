@@ -8,11 +8,13 @@ class NavbarItem extends StatelessWidget {
     required this.path,
     required this.itemColor,
     required this.bgColor,
+    this.padding,
   });
   final void Function()? onTap;
   final String path;
   final Color itemColor;
   final Color bgColor;
+  final EdgeInsetsGeometry? padding;
 
   @override
   Widget build(BuildContext context) {
@@ -28,18 +30,20 @@ class NavbarItem extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          width: h*0.07,
-          height: h*0.07,
-          padding: const EdgeInsets.all(12),
+          width: h * 0.07,
+          height: h * 0.07,
+          padding: padding,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(50),
             color: bgColor,
           ),
-          child: SvgPicture.asset(
-            path,
-            // height: 40,
-            // width: 40,
-            color: itemColor,
+          child: Center(
+            child: SvgPicture.asset(
+              path,
+              height: 18,
+              width: 18,
+              color: itemColor,
+            ),
           ),
         ),
       ),
