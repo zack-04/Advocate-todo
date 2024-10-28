@@ -5,10 +5,10 @@ class CustomButton extends StatelessWidget {
   const CustomButton({
     super.key,
     this.onPressed,
-    required this.text,
+    required this.widget,
   });
   final void Function()? onPressed;
-  final String text;
+  final Widget widget;
 
   @override
   Widget build(BuildContext context) {
@@ -24,14 +24,7 @@ class CustomButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
           ),
-          child: Text(
-            text,
-            style: GoogleFonts.inter(
-              color: Colors.white,
-              fontSize: 20.0,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          child: widget,
         ),
       ),
     );

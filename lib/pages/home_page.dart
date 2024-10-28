@@ -5,7 +5,9 @@ import 'package:advocate_todo_list/widgets/navbar_item.dart';
 import 'package:flutter/material.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  const HomePage({super.key, this.initialTabIndex = 0, this.todoTabIndex = 0});
+  final int initialTabIndex;
+  final int todoTabIndex;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -13,6 +15,15 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedTabIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedTabIndex = widget.initialTabIndex;
+    debugPrint('Initial index = $_selectedTabIndex');
+    debugPrint('Initial tab index = ${widget.todoTabIndex}');
+  }
+
   void _onTabSelected(int index) {
     setState(() {
       _selectedTabIndex = index;
@@ -30,10 +41,10 @@ class _HomePageState extends State<HomePage> {
         children: [
           IndexedStack(
             index: _selectedTabIndex,
-            children: const [
-              TodoListPage(),
-              BulletinPage(),
-              CaseListPage(),
+            children: [
+              TodoListPage(tabIndex: widget.todoTabIndex),
+              const BulletinPage(),
+              const CaseListPage(),
             ],
           ),
           Positioned(
@@ -79,6 +90,7 @@ class _HomePageState extends State<HomePage> {
                         _onTabSelected(2);
                       },
                       path: 'assets/icons/case.svg',
+                      padding: const EdgeInsets.only(left: 2),
                       itemColor:
                           _selectedTabIndex == 2 ? Colors.white : Colors.black,
                       bgColor:

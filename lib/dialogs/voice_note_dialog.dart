@@ -14,7 +14,7 @@ import 'package:advocate_todo_list/widgets/toast_message.dart';
 import 'package:advocate_todo_list/widgets/visual_component.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../const.dart';
+import '../utils/const.dart';
 
 class VoiceNoteDialog extends StatefulWidget {
   final Function refreshCallback;

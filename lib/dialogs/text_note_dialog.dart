@@ -1,4 +1,4 @@
-import 'package:advocate_todo_list/const.dart';
+import 'package:advocate_todo_list/utils/const.dart';
 import 'package:advocate_todo_list/dialogs/search_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';

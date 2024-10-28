@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'package:advocate_todo_list/const.dart';
+import 'package:advocate_todo_list/utils/const.dart';
+import 'package:advocate_todo_list/dialogs/info_dialog.dart';
 import 'package:advocate_todo_list/model/todo_list_model.dart';
 import 'package:advocate_todo_list/model/user_model.dart';
 import 'package:advocate_todo_list/widgets/toast_message.dart';
@@ -47,6 +48,8 @@ class _OthersTabState extends State<OthersTab> {
           setState(() {
             userDataResponse = UserDataResponse.fromJson(jsonMap);
             isLoading = false;
+            selectedUserName = userDataResponse!.data[0].name;
+            selectedUserId = userDataResponse!.data[0].userId;
           });
         }
       } else {
@@ -110,110 +113,169 @@ class _OthersTabState extends State<OthersTab> {
   @override
   Widget build(BuildContext context) {
     final toDoData = updatedToDoResponse?.data ?? widget.toDoResponse?.data;
+    final pendingTasks =
+        toDoData?.where((task) => task.todoStatus == 'Pending').toList() ?? [];
+    final workInProgressTasks = toDoData
+            ?.where((task) => task.todoStatus == 'Work-Inprogress')
+            .toList() ??
+        [];
+    final completedTasks =
+        toDoData?.where((task) => task.todoStatus == 'Completed').toList() ??
+            [];
+    debugPrint('Pending: ${pendingTasks.length}');
+    debugPrint('In progress: ${workInProgressTasks.length}');
+    debugPrint('Completed: ${completedTasks.length}');
+
     return Scaffold(
       backgroundColor: Colors.white,
-      body: isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-              color: Colors.white,
-            ))
-          : Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              child: Column(
-                children: [
-                  Container(
-                    height: 50,
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: Colors.grey),
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: DropdownButton<String>(
-                      value: selectedUserName,
-                      padding: const EdgeInsets.all(10),
-                      underline: const SizedBox(),
-                      borderRadius: BorderRadius.circular(20),
-                      hint: const Text('Select User'),
-                      isExpanded: true,
-                      items: userDataResponse?.data.map((user) {
-                        return DropdownMenuItem<String>(
-                          value: user.name,
-                          child: Text(user.name),
-                          onTap: () {
-                            selectedUserId = user.userId;
-                          },
-                        );
-                      }).toList(),
-                      onChanged: (String? newValue) async {
-                        setState(() {
-                          selectedUserName = newValue;
-                        });
-                        await fetchTodoList(selectedUserId!);
-                      },
-                    ),
+      body: Stack(
+        children: [
+          Image.asset(
+            'assets/images/abstractBg.jpeg',
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            child: Column(
+              children: [
+                Container(
+                  height: 50,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(15),
                   ),
-                  const SizedBox(height: 20),
-                  Expanded(
-                    child: RefreshIndicator(
-                      onRefresh: _refreshOthersTab,
-                      color: Colors.black,
-                      backgroundColor: Colors.white,
-                      child: toDoData == null || toDoData.isEmpty
-                          ? _buildEmptyState()
-                          : ListView.builder(
-                              itemCount: toDoData.length + 1,
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              itemBuilder: (context, index) {
-                                if (index < toDoData.length) {
-                                  final data = toDoData[index];
-                                  debugPrint('Data = ${data.todoId}');
-                                  return _listItem(
-                                    data.content!,
-                                    index + 1,
-                                    getPriorityColor(data.priority!),
-                                    context,
-                                  );
-                                } else {
-                                  return const SizedBox(height: 100);
-                                }
-                              },
-                            ),
-                    ),
+                  child: DropdownButton<String>(
+                    value: selectedUserName,
+                    padding: const EdgeInsets.all(10),
+                    underline: const SizedBox(),
+                    borderRadius: BorderRadius.circular(20),
+                    hint: const Text('Select User'),
+                    isExpanded: true,
+                    items: userDataResponse?.data.map((user) {
+                      return DropdownMenuItem<String>(
+                        value: user.name,
+                        child: Text(user.name),
+                        onTap: () {
+                          selectedUserId = user.userId;
+                        },
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) async {
+                      setState(() {
+                        selectedUserName = newValue;
+                      });
+                      await fetchTodoList(selectedUserId!);
+                    },
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: toDoData == null || toDoData.isEmpty
+                      ? _buildEmptyState()
+                      : ListView(
+                          children: [
+                            if (workInProgressTasks.isNotEmpty) ...[
+                              _buildListHeader('Work in Progress',
+                                  _getListColor('Work in Progress')),
+                              ...workInProgressTasks
+                                  .asMap()
+                                  .entries
+                                  .map((entry) {
+                                final index = entry.key;
+                                final task = entry.value;
+                                return _listItem(
+                                  task.content!,
+                                  index + 1,
+                                  getPriorityColor(task.priority!),
+                                  context,
+                                  task.todoId!,
+                                );
+                              }),
+                            ],
+                            workInProgressTasks.isEmpty
+                                ? const SizedBox()
+                                : const SizedBox(height: 30),
+                            if (pendingTasks.isNotEmpty) ...[
+                              _buildListHeader('Pending Task',
+                                  _getListColor('Pending Task')),
+                              ...pendingTasks.asMap().entries.map((entry) {
+                                final index = entry.key;
+                                final task = entry.value;
+                                return _listItem(
+                                  task.content!,
+                                  index + 1,
+                                  getPriorityColor(task.priority!),
+                                  context,
+                                  task.todoId!,
+                                );
+                              }),
+                            ],
+                            pendingTasks.isEmpty
+                                ? const SizedBox()
+                                : const SizedBox(height: 30),
+                            if (completedTasks.isNotEmpty) ...[
+                              _buildListHeader('Completed Task',
+                                  _getListColor('Completed Task')),
+                              ...completedTasks.asMap().entries.map((entry) {
+                                final index = entry.key;
+                                final task = entry.value;
+                                return _listItem(
+                                  task.content!,
+                                  index + 1,
+                                  getPriorityColor(task.priority!),
+                                  context,
+                                  task.todoId!,
+                                );
+                              }),
+                            ],
+                            const SizedBox(height: 100),
+                          ],
+                        ),
+                ),
+              ],
             ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 Widget _buildEmptyState() {
   return ListView(
-    children: const [
-      SizedBox(height: 200),
+    children: [
+      const SizedBox(height: 150),
       Center(
-        child: Padding(
-          padding: EdgeInsets.only(bottom: 50),
-          child: Text(
-            'No ToDo items available',
-            style: TextStyle(fontSize: 20),
-          ),
+        child: Image.asset(
+          'assets/images/emptyList.png',
+          height: 200,
+          width: 200,
+          fit: BoxFit.cover,
         ),
       ),
     ],
   );
 }
 
-Widget _listItem(String title, int number, Color color, BuildContext context) {
+Widget _listItem(
+  String title,
+  int number,
+  Color color,
+  BuildContext context,
+  String todoId,
+) {
   return GestureDetector(
     onTap: () {
-      // showInfoDialog(
-      //   context,
-      //   () {
-      //     pickDateAndTime(context);
-      //   },
-      // );
+      todoDetailsApi(
+        context,
+        todoId,
+        () {},
+        'Others',
+      );
     },
     child: Padding(
       padding: const EdgeInsets.symmetric(
@@ -265,6 +327,7 @@ Widget _listItem(String title, int number, Color color, BuildContext context) {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
+            const SizedBox(width: 20),
           ],
         ),
       ),
@@ -312,5 +375,52 @@ Future<void> pickDateAndTime(BuildContext context) async {
         foregroundColor: Colors.black,
       );
     }
+  }
+}
+
+Widget _buildListHeader(String title, Color color) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 10),
+    child: Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        vertical: 12,
+        horizontal: 20,
+      ),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(10),
+        gradient: LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [color, const Color(0xFFEDF5F8)],
+          stops: const [
+            0.0,
+            0.8,
+          ],
+        ),
+      ),
+      child: Text(
+        title,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w500,
+          fontSize: 13,
+        ),
+      ),
+    ),
+  );
+}
+
+Color _getListColor(String title) {
+  switch (title) {
+    case 'Work in Progress':
+      return const Color(0xFF659BFF);
+    case 'Pending Task':
+      return const Color(0xFFFFC260);
+    case 'Completed Task':
+      return const Color(0xFF2DCB4A);
+    default:
+      return Colors.grey;
   }
 }

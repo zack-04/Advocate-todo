@@ -2,6 +2,7 @@
 class ToDoResponse {
   String? selfCount;
   String? approvalCount;
+  String? buzzCount;
   List<ToDoItem>? data;
   String? status;
   String? remarks;
@@ -9,15 +10,17 @@ class ToDoResponse {
   ToDoResponse({
     this.selfCount,
     this.approvalCount,
+    this.buzzCount,
     this.data,
     this.status,
     this.remarks,
   });
-  
+
   factory ToDoResponse.fromJson(Map<String, dynamic> json) {
     return ToDoResponse(
       selfCount: json['self_count'],
       approvalCount: json['approval_count'],
+      buzzCount: json['buzz_count'],
       data: json['data'] != null
           ? List<ToDoItem>.from(
               json['data'].map((item) => ToDoItem.fromJson(item)))
@@ -31,6 +34,7 @@ class ToDoResponse {
     return {
       'self_count': selfCount,
       'approval_count': approvalCount,
+      'buzz_count': buzzCount,
       'data': data?.map((item) => item.toJson()).toList(),
       'status': status,
       'remarks': remarks,
@@ -39,7 +43,7 @@ class ToDoResponse {
 
   @override
   String toString() {
-    return 'ToDoResponse(selfCount: $selfCount, approvalCount: $approvalCount, data: $data, status: $status, remarks: $remarks)';
+    return 'ToDoResponse(selfCount: $selfCount, approvalCount: $approvalCount,buzzCount:$buzzCount, data: $data, status: $status, remarks: $remarks)';
   }
 }
 

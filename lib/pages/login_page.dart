@@ -10,7 +10,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../const.dart';
+import '../utils/const.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -337,6 +337,23 @@ class _LoginPageState extends State<LoginPage> {
                         loginUser(mobController.text, passController.text);
                       },
                     ),
+              child: CustomButton(
+                widget: Text(
+                  'Login',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 20.0,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                onPressed: () {
+                  FocusScope.of(context).unfocus();
+                  if (!formKey.currentState!.validate()) {
+                    return;
+                  }
+                  loginUser(mobController.text, passController.text);
+                },
+              ),
             ),
           ],
         ),

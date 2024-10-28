@@ -1,4 +1,4 @@
-import 'package:advocate_todo_list/const.dart';
+import 'package:advocate_todo_list/utils/const.dart';
 import 'package:advocate_todo_list/model/user_model.dart';
 import 'package:advocate_todo_list/widgets/toast_message.dart';
 import 'package:flutter/material.dart';
@@ -133,43 +133,45 @@ class _TransferDialogState extends State<TransferDialog> {
             ),
             const SizedBox(height: 20),
             // Radio button list
-            ListView.builder(
-              shrinkWrap: true,
-              itemCount: widget.userDataResponse.data.length,
-              itemBuilder: (context, index) {
-                final data = widget.userDataResponse.data;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      selectedPerson = data[index].userId;
-                    });
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 6.0,
-                      horizontal: 20,
+            Expanded(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: widget.userDataResponse.data.length,
+                itemBuilder: (context, index) {
+                  final data = widget.userDataResponse.data;
+                  return InkWell(
+                    onTap: () {
+                      setState(() {
+                        selectedPerson = data[index].userId;
+                      });
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 6.0,
+                        horizontal: 20,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            selectedPerson == data[index].userId
+                                ? Icons.radio_button_checked
+                                : Icons.radio_button_off,
+                            color: selectedPerson == data[index].userId
+                                ? Colors.black
+                                : Colors.grey,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 15),
+                          Text(
+                            data[index].name,
+                            style: const TextStyle(fontSize: 15),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          selectedPerson == data[index].userId
-                              ? Icons.radio_button_checked
-                              : Icons.radio_button_off,
-                          color: selectedPerson == data[index].userId
-                              ? Colors.black
-                              : Colors.grey,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 15),
-                        Text(
-                          data[index].name,
-                          style: const TextStyle(fontSize: 15),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
             // Remarks input
             const SizedBox(height: 20),
