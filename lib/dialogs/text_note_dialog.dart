@@ -25,6 +25,7 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
 
   String? loginUserId;
   List<Map<String, String>> selectedUsers = [];
+  bool isLoading = false;
 
   @override
   void initState() {
@@ -40,6 +41,9 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
   }
 
   Future<void> _createBulletin() async {
+    setState(() {
+      isLoading = true;
+    });
     if (loginUserId == null) {
       showCustomToastification(
         context: context,
@@ -133,6 +137,12 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -177,13 +187,14 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20,),
+                const SizedBox(
+                  height: 20,
+                ),
                 const Padding(
                   padding: EdgeInsets.only(left: 25),
                   child: Text(
                     "Bulletin Content",
                     style: TextStyle(
-
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -281,16 +292,26 @@ class _TextNoteDialogState extends State<TextNoteDialog> {
                         borderRadius: BorderRadius.circular(5),
                       ),
                       color: const Color(0xFF4B4B4B),
-                      onPressed: () async {
-                        await _createBulletin();
-                      },
-                      child: Text(
-                        'Send',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: Colors.white,
-                        ),
-                      ),
+                      onPressed: isLoading
+                          ? () {}
+                          : () async {
+                              await _createBulletin();
+                            },
+                      child: isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              'Send',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ),
                 ),

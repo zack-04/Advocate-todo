@@ -29,6 +29,8 @@ class InfoDialog extends StatefulWidget {
 class _InfoDialogState extends State<InfoDialog> {
   bool isLoading = false;
   bool isLoading1 = false;
+  bool isLoading2 = false;
+
   String? userRole;
   String? empId;
   DateTime? lastBuzzTime;
@@ -127,6 +129,9 @@ class _InfoDialogState extends State<InfoDialog> {
   }
 
   Future<void> getActiveUsersList(String buttonTextName) async {
+    setState(() {
+      isLoading2 = true;
+    });
     String? empId = await getLoginUserId();
     debugPrint('empid: $empId');
     const String url = ApiConstants.allotingUserList;
@@ -157,6 +162,12 @@ class _InfoDialogState extends State<InfoDialog> {
       }
     } catch (e) {
       debugPrint('Error id: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading2 = false;
+        });
+      }
     }
   }
 
@@ -237,7 +248,6 @@ class _InfoDialogState extends State<InfoDialog> {
             context: context,
             type: ToastificationType.success,
             title: 'Moved to pending',
-            icon: Icons.check,
             primaryColor: Colors.green,
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
@@ -258,7 +268,7 @@ class _InfoDialogState extends State<InfoDialog> {
     final showSwitch = data.handlingPersonEnc! == empId || userRole == 'Admin';
     final move = data.todoStatus! != 'Pending' && userRole == 'Admin';
     final isVisible = widget.whichButtonToShow == 'Transfer' ||
-        widget.whichButtonToShow == 'Buzz';
+        widget.whichButtonToShow == 'Others';
 
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 20),
@@ -514,8 +524,9 @@ class _InfoDialogState extends State<InfoDialog> {
             _rowWidget('Handling By:', data.handlingPersonName!),
             const SizedBox(height: 15),
             if ((widget.toDoDetailsResponse.data.handlingPersonEnc! == empId ||
-                    userRole == 'Admin') &&
-                widget.whichButtonToShow == 'Transfer')
+                        userRole == 'Admin') &&
+                    widget.whichButtonToShow == 'Transfer' ||
+                widget.whichButtonToShow == 'Others')
               Padding(
                 padding: const EdgeInsets.only(
                   left: 20,
@@ -531,16 +542,26 @@ class _InfoDialogState extends State<InfoDialog> {
                       borderRadius: BorderRadius.circular(5),
                     ),
                     color: const Color(0xFF4B4B4B),
-                    onPressed: () async {
-                      await getActiveUsersList('Transfer Now');
-                    },
-                    child: Text(
-                      'Transfer',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: Colors.white,
-                      ),
-                    ),
+                    onPressed: isLoading2
+                        ? () {}
+                        : () async {
+                            await getActiveUsersList('Transfer Now');
+                          },
+                    child: isLoading2
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            'Transfer',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                 ),
               ),

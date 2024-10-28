@@ -1,8 +1,10 @@
 import 'package:advocate_todo_list/pages/bulletin_page.dart';
 import 'package:advocate_todo_list/pages/cause_list_page.dart';
 import 'package:advocate_todo_list/pages/todo_list_page.dart';
+import 'package:advocate_todo_list/utils/provider.dart';
 import 'package:advocate_todo_list/widgets/navbar_item.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key, this.initialTabIndex = 0, this.todoTabIndex = 0});
@@ -100,6 +102,34 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
+          ),
+          Consumer<ConnectivityProvider>(
+            builder: (context, connectivityProvider, child) {
+              if (!connectivityProvider.isConnected) {
+                return Container(
+                  color: Colors.red.withOpacity(0.9),
+                  child: const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.wifi_off, color: Colors.white, size: 48),
+                        SizedBox(height: 16),
+                        Text(
+                          'No Internet Connection',
+                          style: TextStyle(color: Colors.white, fontSize: 18),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Please check your connection and try again.',
+                          style: TextStyle(color: Colors.white70, fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
           ),
         ],
       ),

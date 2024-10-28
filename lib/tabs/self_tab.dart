@@ -35,14 +35,14 @@ class _SelfTabState extends State<SelfTab> {
     _buildLists();
   }
 
-  // @override
-  // void didUpdateWidget(SelfTab oldWidget) {
-  //   super.didUpdateWidget(oldWidget);
-  //   if (widget.toDoResponse != oldWidget.toDoResponse) {
-  //     debugPrint('Updated');
-  //     _buildLists();
-  //   }
-  // }
+  @override
+  void didUpdateWidget(SelfTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.toDoResponse != oldWidget.toDoResponse) {
+      debugPrint('Updated');
+      _buildLists();
+    }
+  }
 
   Future<void> changeWorkStatus(
     String todoId,
@@ -116,7 +116,7 @@ class _SelfTabState extends State<SelfTab> {
         todoId: todo.todoId!,
         child: _buildListItem(
           _getContent(todo.content),
-          index + 1,
+          data.indexOf(todo) + 1,
           _getPriorityColor(
             _getPriority(todo.priority),
           ),
@@ -409,7 +409,7 @@ class _SelfTabState extends State<SelfTab> {
       String todoId = (movedItem as CustomDragAndDropItem).todoId;
       debugPrint('Dragged todoId = $todoId');
       changeWorkStatus(todoId, newListIndex, todoIdsOrder);
-      widget.onTransfer();
+      // widget.onTransfer();
       _recalculateNumbers();
     });
 

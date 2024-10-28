@@ -38,6 +38,7 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
   String? loginUserId;
   late RecorderController recorderController;
   late PlayerController playerController;
+  bool isLoading = false;
 
   List<Color> colors = [
     Colors.blueAccent,
@@ -104,6 +105,9 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
   }
 
   Future<void> _createVoiceBulletin() async {
+    setState(() {
+      isLoading = true;
+    });
     if (loginUserId == null || recordingPath == null) {
       debugPrint('Error: User not logged in or no recording found.');
       showCustomToastification(
@@ -118,57 +122,77 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
           // Optional: Navigate to a specific page or handle onTap event
         },
       );
+      setState(() {
+        isLoading = false;
+      });
       return;
     }
 
     final List<String> tagUsers =
-    selectedUsers.map((user) => user['user_id']!).toList();
+        selectedUsers.map((user) => user['user_id']!).toList();
     debugPrint('Tagged users: $tagUsers');
+    try {
+      final Uri uri = Uri.parse(ApiConstants.bulletinCreate);
+      var request = http.MultipartRequest('POST', uri);
 
-    final Uri uri = Uri.parse(ApiConstants.bulletinCreate);
-    var request = http.MultipartRequest('POST', uri);
+      request.fields['enc_key'] = encKey;
+      request.fields['emp_id'] = loginUserId!;
+      request.fields['type'] = 'Voice';
+      request.fields['tag_users'] = jsonEncode(tagUsers);
 
-    request.fields['enc_key'] = encKey;
-    request.fields['emp_id'] = loginUserId!;
-    request.fields['type'] = 'Voice';
-    request.fields['tag_users'] = jsonEncode(tagUsers);
+      if (recordingPath != null) {
+        debugPrint('Attaching recorded file: $recordingPath');
+        var file =
+            await http.MultipartFile.fromPath('voice_note', recordingPath!);
+        request.files.add(file);
+      }
 
-    if (recordingPath != null) {
-      debugPrint('Attaching recorded file: $recordingPath');
-      var file =
-      await http.MultipartFile.fromPath('voice_note', recordingPath!);
-      request.files.add(file);
-    }
+      debugPrint('Sending request to create voice bulletin...');
+      var response = await request.send();
 
-    debugPrint('Sending request to create voice bulletin...');
-    var response = await request.send();
+      if (response.statusCode == 200) {
+        debugPrint('Voice note created successfully.');
+        showCustomToastification(
+          context: context,
+          type: ToastificationType.success,
+          title: 'Voice note created successfully!',
+          // icon: Icons.check,
+          primaryColor: Colors.green,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+        );
+        widget.refreshCallback();
 
-    if (response.statusCode == 200) {
-      debugPrint('Voice note created successfully.');
-      showCustomToastification(
-        context: context,
-        type: ToastificationType.success,
-        title: 'Voice note created successfully!',
-        // icon: Icons.check,
-        primaryColor: Colors.green,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-      );
-      widget.refreshCallback();
-
-      Navigator.pop(context);
-    } else {
-      debugPrint(
-          'Failed to create voice note. Status code: ${response.statusCode}');
+        Navigator.pop(context);
+      } else {
+        debugPrint(
+            'Failed to create voice note. Status code: ${response.statusCode}');
+        showCustomToastification(
+          context: context,
+          type: ToastificationType.error,
+          title: 'Failed To Create',
+          // icon: Icons.error,
+          primaryColor: Colors.red,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+        );
+      }
+    } catch (e) {
       showCustomToastification(
         context: context,
         type: ToastificationType.error,
-        title: 'Failed To Create',
+        title: 'Server Error',
         // icon: Icons.error,
         primaryColor: Colors.red,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -300,7 +324,6 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
       );
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -477,19 +500,29 @@ class _VoiceNoteDialogState extends State<VoiceNoteDialog> {
                       borderRadius: BorderRadius.circular(5),
                     ),
                     color: const Color(0xFF4B4B4B),
-                    onPressed: () async {
-                      if (isRecording) {
-                        await _stopRecording();
-                      }
-                      _createVoiceBulletin();
-                    },
-                    child: Text(
-                      'Send',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: Colors.white,
-                      ),
-                    ),
+                    onPressed: isLoading
+                        ? () {}
+                        : () async {
+                            if (isRecording) {
+                              await _stopRecording();
+                            }
+                            _createVoiceBulletin();
+                          },
+                    child: isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            'Send',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                 ),
               ),

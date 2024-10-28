@@ -27,6 +27,7 @@ class _TransferDialogState extends State<TransferDialog> {
   String? selectedPerson;
   final TextEditingController controller = TextEditingController();
   String? userRole;
+  bool isLoading = false;
 
   @override
   void initState() {
@@ -43,6 +44,9 @@ class _TransferDialogState extends State<TransferDialog> {
   }
 
   Future<void> tranferToOtherUser() async {
+    setState(() {
+      isLoading = true;
+    });
     String? empId = await getLoginUserId();
     debugPrint('empid: $empId');
     debugPrint('Todo id: ${widget.todoId}');
@@ -63,6 +67,9 @@ class _TransferDialogState extends State<TransferDialog> {
           foregroundColor: Colors.black,
         );
       }
+      setState(() {
+        isLoading = false;
+      });
       return;
     }
 
@@ -99,6 +106,12 @@ class _TransferDialogState extends State<TransferDialog> {
       }
     } catch (e) {
       debugPrint('Error id: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -124,7 +137,7 @@ class _TransferDialogState extends State<TransferDialog> {
             Padding(
               padding: const EdgeInsets.only(left: 20),
               child: Text(
-                'Transfer To',
+                widget.buttonTextName == 'Switch' ? 'Switch To' : 'Transfer To',
                 style: GoogleFonts.inter(
                   fontSize: 18.0,
                   fontWeight: FontWeight.bold,
@@ -254,13 +267,23 @@ class _TransferDialogState extends State<TransferDialog> {
                       onPressed: () async {
                         await tranferToOtherUser();
                       },
-                      child: Text(
-                        widget.buttonTextName,
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          color: Colors.white,
-                        ),
-                      ),
+                      child: isLoading
+                          ? const Center(
+                              child: SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                ),
+                              ),
+                            )
+                          : Text(
+                              widget.buttonTextName,
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ),
                 ],

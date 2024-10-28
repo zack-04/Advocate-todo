@@ -7,13 +7,16 @@ import 'package:advocate_todo_list/pages/bulletin_page.dart';
 import 'package:advocate_todo_list/pages/cause_list_page.dart';
 import 'package:advocate_todo_list/pages/home_page.dart';
 import 'package:advocate_todo_list/pages/todo_list_page.dart';
+import 'package:advocate_todo_list/utils/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:open_filex/open_filex.dart';
 
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:timezone/data/latest.dart' as tz;
@@ -123,7 +126,7 @@ void main() async {
           (route) => false,
           arguments: {'tabIndex': 2},
         );
-      } else if (layout == 'details') {
+      } else if (layout == 'Detials') {
         // Navigate to TodoListPage with 'Self' tab (index 0) and pass todoId
         navigatorKey.currentState?.pushNamedAndRemoveUntil(
           '/home',
@@ -136,12 +139,12 @@ void main() async {
           () {},
           'Transfer',
         );
-      } else if (layout == 'approval') {
+      } else if (layout == 'Approval') {
         // Navigate to TodoListPage with 'Assigned' tab (index 1) and pass todoId
         navigatorKey.currentState?.pushNamedAndRemoveUntil(
           '/home',
           (route) => false,
-          arguments: {'tabIndex': 0, 'todoTabIndex': 1},
+          arguments: {'tabIndex': 0, 'todoTabIndex': 0},
         );
         todoDetailsApi(
           navigatorKey.currentContext!,
@@ -212,8 +215,11 @@ void main() async {
     Logger().log('Initial = ${initialMessage.data}');
     runApp(MyApp(message: initialMessage));
   }
+  // await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-  runApp(MyApp(payload: payload));
+  runApp(
+    MyApp(payload: payload),
+  );
 }
 
 void onNotificationClick(RemoteMessage message) {
@@ -235,7 +241,7 @@ void onNotificationClick(RemoteMessage message) {
       (route) => false,
       arguments: {'tabIndex': 2},
     );
-  } else if (layout == 'details') {
+  } else if (layout == 'Detials') {
     // Navigate to TodoListPage with 'Self' tab (index 0) and pass todoId
     navigatorKey.currentState?.pushNamedAndRemoveUntil(
       '/home',
@@ -248,12 +254,12 @@ void onNotificationClick(RemoteMessage message) {
       () {},
       'Transfer',
     );
-  } else if (layout == 'approval') {
+  } else if (layout == 'Approval') {
     // Navigate to TodoListPage with 'Assigned' tab (index 1) and pass todoId
     navigatorKey.currentState?.pushNamedAndRemoveUntil(
       '/home',
       (route) => false,
-      arguments: {'tabIndex': 0, 'todoTabIndex': 1},
+      arguments: {'tabIndex': 0, 'todoTabIndex': 0},
     );
     todoDetailsApi(
       navigatorKey.currentContext!,
@@ -311,49 +317,60 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Advocate Todo List',
-      debugShowCheckedModeBanner: false,
-      navigatorKey: navigatorKey,
-      onGenerateRoute: (RouteSettings settings) {
-        if (settings.name == '/home') {
-          final args = settings.arguments as Map<String, dynamic>? ?? {};
-          return MaterialPageRoute(
-            builder: (_) => HomePage(
-              initialTabIndex: args['tabIndex'] ?? 0,
-              todoTabIndex: args['todoTabIndex'] ?? 0,
-            ),
-          );
-        }
-        return null;
-      },
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: Builder(
-        builder: (context) {
-          if (payload != null || message != null) {
-            debugPrint('Inside : $payload');
-            Future.delayed(Duration.zero, () {
-              _onNotificationClick(context, payload!, message!);
-            });
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (context) => ConnectivityProvider(),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'Advocate Todo List',
+        debugShowCheckedModeBanner: false,
+        navigatorKey: navigatorKey,
+        onGenerateRoute: (RouteSettings settings) {
+          if (settings.name == '/home') {
+            final args = settings.arguments as Map<String, dynamic>? ?? {};
+            return MaterialPageRoute(
+              builder: (_) => HomePage(
+                initialTabIndex: args['tabIndex'] ?? 0,
+                todoTabIndex: args['todoTabIndex'] ?? 0,
+              ),
+            );
           }
-
-          return FutureBuilder<bool>(
-            future: isLoggedInOrNot(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError) {
-                return const Center(child: Text('Error occurred'));
-              } else {
-                final isLoggedIn = snapshot.data ?? false;
-                return isLoggedIn ? const HomePage() : const LoginPage();
-              }
-            },
-          );
+          return null;
         },
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+          useMaterial3: true,
+        ),
+        home: Builder(
+          builder: (context) {
+            if (payload != null) {
+              debugPrint('Inside : $payload');
+              Future.delayed(Duration.zero, () {
+                _onNotificationClick(context, payload!, message!);
+              });
+            } else if (message != null) {
+              Future.delayed(Duration.zero, () {
+                _onNotificationClick(context, 'payload', message!);
+              });
+            }
+
+            return FutureBuilder<bool>(
+              future: isLoggedInOrNot(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return const Center(child: Text('Error occurred'));
+                } else {
+                  final isLoggedIn = snapshot.data ?? false;
+                  return isLoggedIn ? const HomePage() : const LoginPage();
+                }
+              },
+            );
+          },
+        ),
       ),
     );
   }
@@ -363,9 +380,11 @@ void _onNotificationClick(
     BuildContext context, String payload, RemoteMessage message) async {
   final type = message.data['type'];
   final layout = message.data['layout'];
+  final todoId = message.data['todo_id'];
 
   if (type == 'Bulletin') {
     Logger().log('Bull Payload = $payload');
+    Logger().log('Bull data = $message');
     navigatorKey.currentState?.pushNamedAndRemoveUntil(
       '/home',
       (route) => false,
@@ -377,6 +396,33 @@ void _onNotificationClick(
       '/home',
       (route) => false,
       arguments: {'tabIndex': 2},
+    );
+  } else if (layout == 'Detials') {
+    Logger().log('Id = $todoId');
+    // Navigate to TodoListPage with 'Self' tab (index 0) and pass todoId
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/home',
+      (route) => false,
+      arguments: {'tabIndex': 0, 'todoTabIndex': 0},
+    );
+    todoDetailsApi(
+      navigatorKey.currentContext!,
+      todoId,
+      () {},
+      'Transfer',
+    );
+  } else if (layout == 'Approval') {
+    // Navigate to TodoListPage with 'Assigned' tab (index 1) and pass todoId
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/home',
+      (route) => false,
+      arguments: {'tabIndex': 0, 'todoTabIndex': 0},
+    );
+    todoDetailsApi(
+      navigatorKey.currentContext!,
+      todoId,
+      () {},
+      'AcceptDeny',
     );
   } else {
     debugPrint('Notification clicked from out : $payload');

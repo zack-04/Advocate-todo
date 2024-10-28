@@ -319,42 +319,45 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                     ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 30),
+                      child: CustomButton(
+                        widget: isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                'Login',
+                                style: GoogleFonts.inter(
+                                  color: Colors.white,
+                                  fontSize: 20.0,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                        onPressed: isLoading
+                            ? null
+                            : () {
+                                FocusScope.of(context).unfocus();
+                                if (!formKey.currentState!.validate()) {
+                                  return;
+                                }
+                                loginUser(
+                                    mobController.text, passController.text);
+                              },
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 50, left: 30, right: 30),
-              child: isLoading
-                  ? const CircularProgressIndicator()
-                  : CustomButton(
-                      text: 'Login',
-                      onPressed: () {
-                        FocusScope.of(context).unfocus();
-                        if (!formKey.currentState!.validate()) {
-                          return;
-                        }
-                        loginUser(mobController.text, passController.text);
-                      },
-                    ),
-              child: CustomButton(
-                widget: Text(
-                  'Login',
-                  style: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontSize: 20.0,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                onPressed: () {
-                  FocusScope.of(context).unfocus();
-                  if (!formKey.currentState!.validate()) {
-                    return;
-                  }
-                  loginUser(mobController.text, passController.text);
-                },
-              ),
-            ),
+            // Padding(
+            //   padding: const EdgeInsets.only(bottom: 20, left: 30, right: 30),
+            //   child:
+            // ),
           ],
         ),
       ),

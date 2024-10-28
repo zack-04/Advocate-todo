@@ -32,7 +32,7 @@ class TodoListPage extends StatefulWidget {
 class _TodoListPageState extends State<TodoListPage> {
   int _selectedIndex = 0;
   bool showCreateForm = false;
-  final List<String> _tabs = ['Self', 'Assigned', 'Buzz', 'Others'];
+  final List<String> _tabs = ['Self', 'Approval', 'Buzz', 'Others'];
   int selfCount = 0;
   int approvalCount = 0;
   int buzzCount = 0;
@@ -200,20 +200,19 @@ class _TodoListPageState extends State<TodoListPage> {
                               ),
                               onPressed: toggleCreateForm,
                             ),
-                            // IconButton(
-                            //   icon: const Icon(
-                            //     Icons.accessibility,
-                            //     size: 25,
-                            //   ),
-                            //   onPressed: () {
-                            //     Navigator.push(
-                            //       context,
-                            //       MaterialPageRoute(
-                            //         builder: (context) => const LoggerRead(),
-                            //       ),
-                            //     );
-                            //   },
-                            // ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.abc,
+                                size: 25,
+                              ),
+                              onPressed: () {
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const LoggerRead(),
+                                    ));
+                              },
+                            ),
                           ],
                         ),
                       ),
@@ -414,11 +413,21 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
   UserDataResponse? userDataResponse;
   String? selectedUserName;
   String? selectedUserId;
+  String? loginUserRole;
 
   @override
   void initState() {
     super.initState();
     getActiveUsersList();
+    _loadUserRole();
+  }
+
+  Future<void> _loadUserRole() async {
+    String? role = await getLoginUserRole();
+    setState(() {
+      loginUserRole = role;
+    });
+    debugPrint('Role = $loginUserRole');
   }
 
   Future<void> getActiveUsersList() async {
@@ -516,7 +525,7 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
           'todo': controller.text,
           'priority': selectedPriority,
           'due_date': formattedDate,
-          'assign_id': selectedUserId,
+          'assign_id': loginUserRole == 'Admin' ? selectedUserId : empId,
         },
       );
 
@@ -530,7 +539,6 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
             context: context,
             type: ToastificationType.success,
             title: 'Todo created successfully!',
-            // icon: Icons.check,
             primaryColor: Colors.green,
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
@@ -543,7 +551,6 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
             context: context,
             type: ToastificationType.error,
             title: responseBody['status'],
-            // icon: Icons.error,
             primaryColor: Colors.red,
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
@@ -556,7 +563,6 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
           context: context,
           type: ToastificationType.error,
           title: 'An error occurred! Please check your connection.',
-          // icon: Icons.error,
           primaryColor: Colors.red,
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
@@ -678,68 +684,6 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
                               isDropdownOpen = !isDropdownOpen;
                             });
                           },
-                        );
-                      }).toList(),
-                      onChanged: (String? newValue) async {
-                        setState(() {
-                          selectedUserName = newValue;
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  CustomButton(
-                    text: 'Create List',
-                    onPressed: isLoading
-                        ? null
-                        : () async {
-                            if (!formKey.currentState!.validate()) {
-                              return;
-                            }
-                            if (selectedUserId == null) {
-                              showCustomToastification(
-                                context: context,
-                                type: ToastificationType.error,
-                                title: 'Select a user',
-                                // icon: Icons.error,
-                                primaryColor: Colors.red,
-                                backgroundColor: Colors.white,
-                                foregroundColor: Colors.black,
-                              );
-                              return;
-                            }
-                            await todoCreation();
-                          },
-                  ),
-                  const SizedBox(height: 100),
-                ],
-              ),
-            ),
-
-            // Dropdown menu overlay
-            if (isDropdownOpen)
-              Positioned(
-                top: 170,
-                left: 0,
-                right: 0,
-                child: Material(
-                  elevation: 4,
-                  borderRadius: BorderRadius.circular(8),
-                  child: Column(
-                    children: <String>['High', 'Medium', 'Low']
-                        .map((priority) => GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  selectedPriority = priority;
-                                  isDropdownOpen = false;
-                                });
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 8,
-                                  horizontal: 15,
-                                ),
-                                child: Row(
                           child: Container(
                             padding: const EdgeInsets.only(
                               top: 14,
@@ -824,63 +768,72 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
                           ),
                         ),
                         const SizedBox(height: 32),
-                        const Text(
-                          'Select User',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          height: 55,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade200),
-                            borderRadius: BorderRadius.circular(8),
-                            color: const Color(0xFFF6F6F6),
-                          ),
-                          child: DropdownButton<String>(
-                            value: selectedUserName,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 10,
-                            ),
-                            underline: const SizedBox(),
-                            borderRadius: BorderRadius.circular(20),
-                            hint: const Text(
-                              'Select User',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 16,
-                              ),
-                            ),
-                            style: const TextStyle(
-                              color: Colors.black,
-                              fontSize: 16,
-                            ),
-                            icon: const Icon(
-                              FontAwesome.chevron_down_solid,
-                              size: 19,
-                              color: Colors.black,
-                            ),
-                            isExpanded: true,
-                            items: userDataResponse?.data.map((user) {
-                              return DropdownMenuItem<String>(
-                                value: user.name,
-                                child: Text(user.name),
-                                onTap: () {
-                                  selectedUserId = user.userId;
-                                },
-                              );
-                            }).toList(),
-                            onChanged: (String? newValue) async {
-                              setState(() {
-                                selectedUserName = newValue;
-                              });
-                            },
-                          ),
-                        ),
+                        loginUserRole == 'Admin'
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Assign To',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    height: 55,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                          color: Colors.grey.shade200),
+                                      borderRadius: BorderRadius.circular(8),
+                                      color: const Color(0xFFF6F6F6),
+                                    ),
+                                    child: DropdownButton<String>(
+                                      value: selectedUserName,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 10,
+                                      ),
+                                      underline: const SizedBox(),
+                                      borderRadius: BorderRadius.circular(20),
+                                      hint: const Text(
+                                        'Select User',
+                                        style: TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 16,
+                                      ),
+                                      icon: const Icon(
+                                        FontAwesome.chevron_down_solid,
+                                        size: 19,
+                                        color: Colors.black,
+                                      ),
+                                      isExpanded: true,
+                                      items: userDataResponse?.data.map((user) {
+                                        return DropdownMenuItem<String>(
+                                          value: user.name,
+                                          child: Text(user.name),
+                                          onTap: () {
+                                            selectedUserId = user.userId;
+                                          },
+                                        );
+                                      }).toList(),
+                                      onChanged: (String? newValue) async {
+                                        setState(() {
+                                          selectedUserName = newValue;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : const SizedBox(),
                         const SizedBox(height: 40),
                         CustomButton(
                           widget: isLoading
@@ -912,7 +865,6 @@ class _ToDoCreationFormState extends State<ToDoCreationForm> {
                                       context: context,
                                       type: ToastificationType.error,
                                       title: 'Select a user',
-                                      icon: Icons.error,
                                       primaryColor: Colors.red,
                                       backgroundColor: Colors.white,
                                       foregroundColor: Colors.black,
